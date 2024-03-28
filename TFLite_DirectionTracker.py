@@ -43,7 +43,8 @@ parser.add_argument('--labels', help='Name of the labelmap file, if different th
                     default='labelmap.txt')
 parser.add_argument('--threshold', help='Minimum confidence threshold for displaying detected objects',
                     default=0.4)
-parser.add_argument('--resolution', help='Desired webcam resolution in WxH. If the webcam does not support the resolution entered, errors may occur.',
+parser.add_argument('--resolution',
+                    help='Desired webcam resolution in WxH. If the webcam does not support the resolution entered, errors may occur.',
                     default='1280x720')
 parser.add_argument('--edgetpu', help='Use Coral Edge TPU Accelerator to speed up detection',
                     action='store_true')
@@ -54,17 +55,19 @@ args = parser.parse_args()
 
 # initialize our centroid tracker and frame dimensions
 ct = CentroidTracker()
-objects ={}
-old_objects={}
-dirlabels={}
+objects = {}
+old_objects = {}
+dirlabels = {}
+
 
 # compare the co-ordinates for dictionaries of interest
 def DictDiff(dict1, dict2):
-   dict3 = {**dict1}
-   for key, value in dict3.items():
-       if key in dict1 and key in dict2:
-               dict3[key] = np.subtract(dict2[key], dict1[key])
-   return dict3
+    dict3 = {**dict1}
+    for key, value in dict3.items():
+        if key in dict1 and key in dict2:
+            dict3[key] = np.subtract(dict2[key], dict1[key])
+    return dict3
+
 
 MODEL_NAME = args.modeldir
 GRAPH_NAME = args.graph
@@ -81,10 +84,12 @@ VIDEO_NAME = args.video
 pkg = importlib.util.find_spec('tflite_runtime')
 if pkg:
     from tflite_runtime.interpreter import Interpreter
+
     if use_TPU:
         from tflite_runtime.interpreter import load_delegate
 else:
     from tensorflow.lite.python.interpreter import Interpreter
+
     if use_TPU:
         from tensorflow.lite.python.interpreter import load_delegate
 
@@ -92,16 +97,16 @@ else:
 if use_TPU:
     # If user has specified the name of the .tflite file, use that name, otherwise use default 'edgetpu.tflite'
     if (GRAPH_NAME == 'detect.tflite'):
-        GRAPH_NAME = 'edgetpu.tflite'       
+        GRAPH_NAME = 'edgetpu.tflite'
 
-# Get path to current working directory
+    # Get path to current working directory
 CWD_PATH = os.getcwd()
 
 # Path to .tflite file, which contains the model that is used for object detection
-PATH_TO_CKPT = os.path.join(CWD_PATH,MODEL_NAME,GRAPH_NAME)
+PATH_TO_CKPT = os.path.join(CWD_PATH, MODEL_NAME, GRAPH_NAME)
 
 # Path to label map file
-PATH_TO_LABELS = os.path.join(CWD_PATH,MODEL_NAME,LABELMAP_NAME)
+PATH_TO_LABELS = os.path.join(CWD_PATH, MODEL_NAME, LABELMAP_NAME)
 
 # Load the label map
 with open(PATH_TO_LABELS, 'r') as f:
@@ -111,7 +116,7 @@ with open(PATH_TO_LABELS, 'r') as f:
 # https://www.tensorflow.org/lite/models/object_detection/overview
 # First label is '???', which has to be removed.
 if labels[0] == '???':
-    del(labels[0])
+    del (labels[0])
 
 # Load the Tensorflow Lite model.
 # If using Edge TPU, use special load_delegate argument
@@ -120,7 +125,7 @@ if use_TPU:
                               experimental_delegates=[load_delegate('libedgetpu.so.1.0')])
     print(PATH_TO_CKPT)
 else:
-    interpreter = Interpreter(model_path=PATH_TO_CKPT)
+    interpreter = Interpreter(model_path=PATH_TO_CKPT, num_threads=16)
 
 interpreter.allocate_tensors()
 
@@ -140,23 +145,26 @@ frame_rate_calc = 1
 freq = cv2.getTickFrequency()
 
 # Open video file
-VIDEO_PATH = os.path.join(CWD_PATH,VIDEO_NAME)
+VIDEO_PATH = os.path.join(CWD_PATH, VIDEO_NAME)
 video = cv2.VideoCapture(VIDEO_PATH)
 imW = video.get(cv2.CAP_PROP_FRAME_WIDTH)
 imH = video.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
-fourcc = cv2.VideoWriter_fourcc(*'avc1')  # Alternatively, you can try 'X264' if 'avc1' doesn't work
-out = cv2.VideoWriter('output.mp4', fourcc, 20.0, (640, 480))
-
+# fourcc = cv2.VideoWriter_fourcc(*'avc1')  # Alternatively, you can try 'X264' if 'avc1' doesn't work
+# out = cv2.VideoWriter('output.mp4', fourcc, 20.0, (640, 480))
+#
+# fourcc = cv2.VideoWriter_fourcc(*'MP4V')
+fourcc = cv2.VideoWriter_fourcc('X', 'V', 'I', 'D')
+out = cv2.VideoWriter('output.avi', fourcc, 20.0, (640, 480))
 
 # Newly added co-ord stuff
 leftcount = 0
-rightcount = 0 
+rightcount = 0
 upcount = 0
 downcount = 0
 obsFrames = 0
 
-while(video.isOpened()): # Uncomment block for recorded video input
+while (video.isOpened()):  # Uncomment block for recorded video input
     # Acquire frame and resize to expected shape [1xHxWx3]
     # Start timer (for calculating frame rate)
     t1 = cv2.getTickCount()
@@ -164,8 +172,8 @@ while(video.isOpened()): # Uncomment block for recorded video input
     old_objects.update(objects)
     ret, frame1 = video.read()
     if not ret:
-      print('Reached the end of the video!')
-      break
+        print('Reached the end of the video!')
+        break
     # Acquire frame and resize to expected shape [1xHxWx3]
     frame = frame1.copy()
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -176,7 +184,7 @@ while(video.isOpened()): # Uncomment block for recorded video input
     if floating_model:
         input_data = (np.float32(input_data) - input_mean) / input_std
 
-    # Perform the actual detection by running the model with the image as input
+    # # Perform the actual detection by running the model with the image as input
     interpreter.set_tensor(input_details[0]['index'],input_data)
     interpreter.invoke()
 
@@ -187,15 +195,15 @@ while(video.isOpened()): # Uncomment block for recorded video input
 
     #rects variable
     rects =[]
-  
+
     # Loop over all detections and draw detection box if confidence is above minimum threshold
-    
+
     for i in range(len(scores)):
         if ((scores[i] > min_conf_threshold) and (scores[i] <= 1.0)):
-            
+
             object_name = labels[int(classes[i])] # Look up object name from "labels" array using class index
             if object_name == 'person':
-            
+
                 # Get bounding box coordinates and draw box
                 # Interpreter can return coordinates that are outside of image dimensions, need to force them to be within image using max() and min()
                 ymin = int(max(1,(boxes[i][0] * imH)))
@@ -203,84 +211,84 @@ while(video.isOpened()): # Uncomment block for recorded video input
                 ymax = int(min(imH,(boxes[i][2] * imH)))
                 xmax = int(min(imW,(boxes[i][3] * imW)))
                 box = np.array([xmin,ymin,xmax,ymax])
-            
+
                 rects.append(box.astype("int"))
-            
+
     #update the centroid for the objects
     objects = ct.update(rects)
     objectslist= pd.DataFrame.from_dict(objects).transpose()
     objectslist.columns = ['c','d']
     objectslist['index'] = objectslist.index
-    
+
     for index,row in objectslist.iterrows():
         text = "ID {}".format(row['index'])
         cv2.putText(frame, text, (row['c'] - 10, row['d'] - 10),
             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-    
-    # calculate the difference between this and the previous frame
-    x = DictDiff(objects,old_objects)
-    difflist= pd.DataFrame.from_dict(x).transpose()
-    difflist.columns = ['a','b']
-    difflist['index'] = difflist.index
-    z = difflist.merge(objectslist,left_on = 'index', right_on = 'index', suffixes=('_diff','_current'))
+    #
+    # # calculate the difference between this and the previous frame
+    # x = DictDiff(objects,old_objects)
+    # difflist= pd.DataFrame.from_dict(x).transpose()
+    # difflist.columns = ['a','b']
+    # difflist['index'] = difflist.index
+    # z = difflist.merge(objectslist,left_on = 'index', right_on = 'index', suffixes=('_diff','_current'))
+    #
+    # dirx = z['c']
+    # diry = z['d']
+    #
+    # for i,j,k in zip(dirlabels,dirx,diry):
+    #     direction = format(dirlabels[i])
+    #     cv2.putText(frame, direction, (j+ 10, k + 10),
+    #     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (60, 60, 255), 2)
+    #
+    # #see what the difference in centroids is after every x frames to determine direction of movement
+    # #and tally up total number of objects that travelled left or right
+    # if obsFrames % 5 == 0: #set this to a higher number for more accurate tallying
+    #   for index,row in z.iterrows():
+    #
+    #         if row['b'] < -2:
+    #             dirlabels[index] = "Down"
+    #         if row['b'] > 2 :
+    #             dirlabels[index] = "Up"
+    #         if row['a'] > 2:
+    #             dirlabels[index] = "Left"
+    #         if row['a'] < -2:
+    #             dirlabels[index] = "Right"
+    #         if row['b'] > 3 & row['a'] > 1:
+    #             dirlabels[index] = "Up Left"
+    #         if row['b'] > 3 & row['a'] < -1:
+    #             dirlabels[index] = "Up Right"
+    #         if row['b'] < -3 & row['a'] > 1:
+    #             dirlabels[index] = "Down Left"
+    #         if row['b'] < -3 & row['a'] < -1:
+    #             dirlabels[index] = "Down Right"
+    #         if row['b'] > 30 | row['a'] > 30:
+    #             dirlabels[index] = "" # to ignore direction on the first frame obejects are loaded in
+    #
+    # # prints the direction of travel (if any) and timestamp
+    # print(dirlabels, time.ctime())
+    #
+    # # Draw framerate in corner of frame
+    # cv2.putText(frame,'FPS: {0:.2f}'.format(frame_rate_calc),(30,50),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,0),2,cv2.LINE_AA)
 
-    dirx = z['c']
-    diry = z['d']
-
-    for i,j,k in zip(dirlabels,dirx,diry):
-        direction = format(dirlabels[i])
-        cv2.putText(frame, direction, (j+ 10, k + 10),
-        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (60, 60, 255), 2)       
-
-    #see what the difference in centroids is after every x frames to determine direction of movement
-    #and tally up total number of objects that travelled left or right
-    if obsFrames % 5 == 0: #set this to a higher number for more accurate tallying
-      for index,row in z.iterrows():
-            
-            if row['b'] < -2:
-                dirlabels[index] = "Down"
-            if row['b'] > 2 :
-                dirlabels[index] = "Up"   
-            if row['a'] > 2:
-                dirlabels[index] = "Left"
-            if row['a'] < -2:
-                dirlabels[index] = "Right"
-            if row['b'] > 3 & row['a'] > 1:
-                dirlabels[index] = "Up Left"
-            if row['b'] > 3 & row['a'] < -1:
-                dirlabels[index] = "Up Right"
-            if row['b'] < -3 & row['a'] > 1:
-                dirlabels[index] = "Down Left"
-            if row['b'] < -3 & row['a'] < -1:
-                dirlabels[index] = "Down Right"
-            if row['b'] > 30 | row['a'] > 30:
-                dirlabels[index] = "" # to ignore direction on the first frame obejects are loaded in
-      
-    # prints the direction of travel (if any) and timestamp
-    print(dirlabels, time.ctime())
-    
-    # Draw framerate in corner of frame
-    cv2.putText(frame,'FPS: {0:.2f}'.format(frame_rate_calc),(30,50),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,0),2,cv2.LINE_AA)
-
-    vidout = cv2.resize(frame,(640, 480))
+    vidout = cv2.resize(frame, (640, 480))
     out.write(vidout)
 
-    # # All the results have been drawn on the frame, so it's time to display it.
-    # cv2.imshow('Object detector', frame)
+    # # # All the results have been drawn on the frame, so it's time to display it.
+    # # cv2.imshow('Object detector', frame)
+    #
+    # # Calculate framerate
+    # t2 = cv2.getTickCount()
+    # time1 = (t2-t1)/freq
+    # frame_rate_calc= 1/time1
+    # #count number of frames for direction calculation
+    # obsFrames = obsFrames + 1
 
-    # Calculate framerate
-    t2 = cv2.getTickCount()
-    time1 = (t2-t1)/freq
-    frame_rate_calc= 1/time1
-    #count number of frames for direction calculation
-    obsFrames = obsFrames + 1
-    
     # Press 'q' to quit and give the total tally
     if cv2.waitKey(1) == ord('q'):
         break
 
 # Clean up
 cv2.destroyAllWindows()
-video.release() #for recorded video
-out.release() 
-#videostream.stop() #for videostream
+video.release()  # for recorded video
+out.release()
+# videostream.stop() #for videostream
