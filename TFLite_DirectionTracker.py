@@ -48,7 +48,7 @@ parser.add_argument('--resolution', help='Desired webcam resolution in WxH. If t
 parser.add_argument('--edgetpu', help='Use Coral Edge TPU Accelerator to speed up detection',
                     action='store_true')
 parser.add_argument('--video', help='Name of the video file',
-                    default='Examples/bustling.mp4')
+                    default='samples/input_video.mp4')
 
 args = parser.parse_args()
 
@@ -145,8 +145,8 @@ video = cv2.VideoCapture(VIDEO_PATH)
 imW = video.get(cv2.CAP_PROP_FRAME_WIDTH)
 imH = video.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
-fourcc = cv2.VideoWriter_fourcc('X','V','I','D')
-out = cv2.VideoWriter("output.avi", fourcc, 20.0, (1280,720))
+fourcc = cv2.VideoWriter_fourcc(*'avc1')  # Alternatively, you can try 'X264' if 'avc1' doesn't work
+out = cv2.VideoWriter('output.mp4', fourcc, 20.0, (640, 480))
 
 
 # Newly added co-ord stuff
@@ -262,11 +262,11 @@ while(video.isOpened()): # Uncomment block for recorded video input
     # Draw framerate in corner of frame
     cv2.putText(frame,'FPS: {0:.2f}'.format(frame_rate_calc),(30,50),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,0),2,cv2.LINE_AA)
 
-    vidout = cv2.resize(frame,(1280,720))
+    vidout = cv2.resize(frame,(640, 480))
     out.write(vidout)
 
-    # All the results have been drawn on the frame, so it's time to display it.
-    cv2.imshow('Object detector', frame)
+    # # All the results have been drawn on the frame, so it's time to display it.
+    # cv2.imshow('Object detector', frame)
 
     # Calculate framerate
     t2 = cv2.getTickCount()
