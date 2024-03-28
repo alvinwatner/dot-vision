@@ -84,12 +84,10 @@ VIDEO_NAME = args.video
 pkg = importlib.util.find_spec('tflite_runtime')
 if pkg:
     from tflite_runtime.interpreter import Interpreter
-
     if use_TPU:
         from tflite_runtime.interpreter import load_delegate
 else:
     from tensorflow.lite.python.interpreter import Interpreter
-
     if use_TPU:
         from tensorflow.lite.python.interpreter import load_delegate
 
@@ -219,7 +217,6 @@ while (video.isOpened()):  # Uncomment block for recorded video input
     objectslist= pd.DataFrame.from_dict(objects).transpose()
     objectslist.columns = ['c','d']
     objectslist['index'] = objectslist.index
-
     for index,row in objectslist.iterrows():
         text = "ID {}".format(row['index'])
         cv2.putText(frame, text, (row['c'] - 10, row['d'] - 10),
@@ -228,7 +225,6 @@ while (video.isOpened()):  # Uncomment block for recorded video input
     # # calculate the difference between this and the previous frame
     # x = DictDiff(objects,old_objects)
     # difflist= pd.DataFrame.from_dict(x).transpose()
-    # difflist.columns = ['a','b']
     # difflist['index'] = difflist.index
     # z = difflist.merge(objectslist,left_on = 'index', right_on = 'index', suffixes=('_diff','_current'))
     #
@@ -283,11 +279,10 @@ while (video.isOpened()):  # Uncomment block for recorded video input
     # #count number of frames for direction calculation
     # obsFrames = obsFrames + 1
 
-    # Press 'q' to quit and give the total tally
-    if cv2.waitKey(1) == ord('q'):
-        break
-
-# Clean up
+    
+    # calculate the difference between this and the previous frame
+    x = DictDiff(objects,old_objects)
+    difflist= pd.DataFrame.from_dict(x).transpose()
 cv2.destroyAllWindows()
 video.release()  # for recorded video
 out.release()
