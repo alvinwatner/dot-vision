@@ -185,103 +185,61 @@ while (video.isOpened()):  # Uncomment block for recorded video input
         input_data = (np.float32(input_data) - input_mean) / input_std
 
     # # Perform the actual detection by running the model with the image as input
-    interpreter.set_tensor(input_details[0]['index'],input_data)
+    interpreter.set_tensor(input_details[0]['index'], input_data)
     interpreter.invoke()
 
     # Retrieve detection results
-    boxes = interpreter.get_tensor(output_details[0]['index'])[0] # Bounding box coordinates of detected objects
-    classes = interpreter.get_tensor(output_details[1]['index'])[0] # Class index of detected objects
-    scores = interpreter.get_tensor(output_details[2]['index'])[0] # Confidence of detected objects
+    boxes = interpreter.get_tensor(output_details[0]['index'])[0]  # Bounding box coordinates of detected objects
+    classes = interpreter.get_tensor(output_details[1]['index'])[0]  # Class index of detected objects
+    scores = interpreter.get_tensor(output_details[2]['index'])[0]  # Confidence of detected objects
 
-    #rects variable
-    rects =[]
+    # rects variable
+    rects = []
 
     # Loop over all detections and draw detection box if confidence is above minimum threshold
 
     for i in range(len(scores)):
-        if ((scores[i] > min_conf_threshold) and (scores[i] <= 1.0)):
+        if (scores[i] > min_conf_threshold) and (scores[i] <= 1.0):
 
-            object_name = labels[int(classes[i])] # Look up object name from "labels" array using class index
+            object_name = labels[int(classes[i])]  # Look up object name from "labels" array using class index
             if object_name == 'person':
-
                 # Get bounding box coordinates and draw box
                 # Interpreter can return coordinates that are outside of image dimensions, need to force them to be within image using max() and min()
-                ymin = int(max(1,(boxes[i][0] * imH)))
-                xmin = int(max(1,(boxes[i][1] * imW)))
-                ymax = int(min(imH,(boxes[i][2] * imH)))
-                xmax = int(min(imW,(boxes[i][3] * imW)))
-                box = np.array([xmin,ymin,xmax,ymax])
+                ymin = int(max(1, (boxes[i][0] * imH)))
+                xmin = int(max(1, (boxes[i][1] * imW)))
+                ymax = int(min(imH, (boxes[i][2] * imH)))
+                xmax = int(min(imW, (boxes[i][3] * imW)))
+                box = np.array([xmin, ymin, xmax, ymax])
 
                 rects.append(box.astype("int"))
 
-    #update the centroid for the objects
+    # update the centroid for the objects
     objects = ct.update(rects)
-    objectslist= pd.DataFrame.from_dict(objects).transpose()
-    objectslist.columns = ['c','d']
+    objectslist = pd.DataFrame.from_dict(objects).transpose()
+    objectslist.columns = ['c', 'd']
     objectslist['index'] = objectslist.index
 
-    for index,row in objectslist.iterrows():
+    for index, row in objectslist.iterrows():
         text = "ID {}".format(row['index'])
         cv2.putText(frame, text, (row['c'] - 10, row['d'] - 10),
-            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-    #
-    # # calculate the difference between this and the previous frame
-    # x = DictDiff(objects,old_objects)
-    # difflist= pd.DataFrame.from_dict(x).transpose()
-    # difflist.columns = ['a','b']
-    # difflist['index'] = difflist.index
-    # z = difflist.merge(objectslist,left_on = 'index', right_on = 'index', suffixes=('_diff','_current'))
-    #
-    # dirx = z['c']
-    # diry = z['d']
-    #
-    # for i,j,k in zip(dirlabels,dirx,diry):
-    #     direction = format(dirlabels[i])
-    #     cv2.putText(frame, direction, (j+ 10, k + 10),
-    #     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (60, 60, 255), 2)
-    #
-    # #see what the difference in centroids is after every x frames to determine direction of movement
-    # #and tally up total number of objects that travelled left or right
-    # if obsFrames % 5 == 0: #set this to a higher number for more accurate tallying
-    #   for index,row in z.iterrows():
-    #
-    #         if row['b'] < -2:
-    #             dirlabels[index] = "Down"
-    #         if row['b'] > 2 :
-    #             dirlabels[index] = "Up"
-    #         if row['a'] > 2:
-    #             dirlabels[index] = "Left"
-    #         if row['a'] < -2:
-    #             dirlabels[index] = "Right"
-    #         if row['b'] > 3 & row['a'] > 1:
-    #             dirlabels[index] = "Up Left"
-    #         if row['b'] > 3 & row['a'] < -1:
-    #             dirlabels[index] = "Up Right"
-    #         if row['b'] < -3 & row['a'] > 1:
-    #             dirlabels[index] = "Down Left"
-    #         if row['b'] < -3 & row['a'] < -1:
-    #             dirlabels[index] = "Down Right"
-    #         if row['b'] > 30 | row['a'] > 30:
-    #             dirlabels[index] = "" # to ignore direction on the first frame obejects are loaded in
-    #
-    # # prints the direction of travel (if any) and timestamp
-    # print(dirlabels, time.ctime())
-    #
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
     # # Draw framerate in corner of frame
-    # cv2.putText(frame,'FPS: {0:.2f}'.format(frame_rate_calc),(30,50),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,0),2,cv2.LINE_AA)
+    cv2.putText(frame, 'FPS: {0:.2f}'.format(frame_rate_calc), (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2,
+                cv2.LINE_AA)
 
     vidout = cv2.resize(frame, (640, 480))
     out.write(vidout)
 
     # # # All the results have been drawn on the frame, so it's time to display it.
-    # # cv2.imshow('Object detector', frame)
+    cv2.imshow('Object detector', frame)
     #
     # # Calculate framerate
-    # t2 = cv2.getTickCount()
-    # time1 = (t2-t1)/freq
-    # frame_rate_calc= 1/time1
-    # #count number of frames for direction calculation
-    # obsFrames = obsFrames + 1
+    t2 = cv2.getTickCount()
+    time1 = (t2 - t1) / freq
+    frame_rate_calc = 1 / time1
+    # count number of frames for direction calculation
+    obsFrames = obsFrames + 1
 
     # Press 'q' to quit and give the total tally
     if cv2.waitKey(1) == ord('q'):
