@@ -230,7 +230,7 @@ while (video.isOpened()):  # Uncomment block for recorded video input
     out.write(vidout)
 
     # # # All the results have been drawn on the frame, so it's time to display it.
-    cv2.imshow('Object detector', frame)
+    # cv2.imshow('Object detector', frame)
     #
     # # Calculate framerate
     t2 = cv2.getTickCount()
