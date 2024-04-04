@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--vidsource", help="Video source for tracking")
 parser.add_argument("--live", help="Enable live tracking", action="store_true")
 parser.add_argument("--modeldir", help="Directory containing the detect.tflite and labelmap.txt", default="models/")
-parser.add_argument("--threshold", help="Set the threshold for object tracking accuracy", default=0.4)
+parser.add_argument("--threshold", help="Set the threshold for object tracking accuracy", default=0.7)
 args = parser.parse_args()
 is_live = args.live
 video_source = args.vidsource
@@ -43,7 +43,7 @@ else:
 
 # encapsulate interpreter to easily access its properties
 class ModelInterpreter:
-    def __init__(self, model_path):
+    def __init__(self, model_path, threshold=threshold):
         self.interpreter = Interpreter(model_path=model_path)
         self.interpreter.allocate_tensors()
         self.input_details = self.interpreter.get_input_details()
@@ -55,6 +55,7 @@ class ModelInterpreter:
         self.scores: List
         self.frame_width: int
         self.frame_height: int
+        self.treshold = threshold
 
         # all detected objects will be put in the index
         self.input_index = self.input_details[0]["index"]
@@ -84,9 +85,19 @@ class ModelInterpreter:
         self.interpreter.invoke()
 
         # tensorflow boxes has a different bounding box format than opencv
-        self.tf_boxes = self.get_tensor_by_index(0)
-        self.classes = self.get_tensor_by_index(1)
-        self.scores = self.get_tensor_by_index(2)
+        return self.filter_boxes()
+
+    def filter_boxes(self):
+        tf_boxes = self.get_tensor_by_index(0)
+        classes = self.get_tensor_by_index(1)
+        scores = self.get_tensor_by_index(2)
+
+        filtered_boxes = []
+        for i in range(len(scores)):
+            if scores[i] >= self.treshold:
+                if LABELS[int(classes[i])] == "person":
+                    filtered_boxes.append(tf_boxes[i])
+        return filtered_boxes
 
     def get_tensor_by_index(self, index):
         """
@@ -116,7 +127,6 @@ class ModelInterpreter:
         self.tracker.init(frame, cv_box)
 
     def track_objects(self, frame):
-        self.initialize_tracker(frame)
         ret, bbox = self.tracker.update(frame)
         if ret:
             p1 = (int(bbox[0]), int(bbox[1]))
@@ -124,21 +134,110 @@ class ModelInterpreter:
             return p1, p2
 
 
+class Tracker:
+
+    def __init__(self):
+        """
+        initialize the tracker object
+
+        :param frame: opencv2 frame object
+        :param boxes: tensorflow lite bounding boxes
+        :return: None
+        """
+        # the algorithm used for individual tracker
+        self.tracker = cv2.TrackerMIL
+
+        self.boxes = []
+
+        # container for all available trackers
+        self.trackers = []
+        # self.initialize(frame, boxes)
+
+    def convert_tf_boxes_to_opencv(self, boxes):
+        """
+        convert all tensorflow lite bounding boxes into
+        opencv2 bounding box format
+
+        :param boxes: tensorflow lite bounding boxes
+        :return: None
+        """
+        self.boxes = []
+        for box in boxes:
+            ymin, xmin, ymax, xmax = box
+            xmin = int(xmin * self.frame_width)
+            xmax = int(xmax * self.frame_width)
+            ymin = int(ymin * self.frame_height)
+            ymax = int(ymax * self.frame_height)
+            width = xmax - xmin
+            height = ymax - ymin
+
+            cv_box = (xmin, ymin, width, height)
+            self.boxes.append(cv_box)
+
+    def initialize(self, frame, boxes):
+        """
+        initialize trackers for object tracking
+
+        :param frame: opencv2 frame object
+        :param boxes: tensorflow lite bounding boxes
+        """
+        self.frame_height, self.frame_width, _ = frame.shape
+
+        self.convert_tf_boxes_to_opencv(boxes)
+
+        # remove all existing tracker
+        self.trackers.clear()
+
+        for box in self.boxes:
+            tracker = self.tracker.create()
+            tracker.init(frame, box)
+            self.trackers.append(tracker)
+
+    def update(self, frame):
+        """
+        update trackers for the given frame
+
+        :param frame: opencv2 frame object
+        :return: tuple containing the bounding box for the tracked object
+        """
+        p1_p2 = []
+
+        for index, tracker in enumerate(self.trackers):
+            ret, box = tracker.update(frame)
+
+            # if tracking successful, add bounding box
+            if ret:
+                p1 = (int(box[0]), int(box[1]))
+                p2 = (int(box[0] + box[2]), int(box[1] + box[3]))
+                p1_p2.append((p1, p2))
+
+            # else, remove the tracker from memory
+            else:
+                self.trackers.pop(index)
+        return p1_p2
+
+
 mod = ModelInterpreter(MODEL_PATH)
+tracker = Tracker()
 
 
 def calculate_framerate(t1, t2):
     frequency = cv2.getTickFrequency()
     time = (t2 - t1) / frequency
     framerate = 1 / time
-    print(framerate)
     return round(framerate)
 
 
-# first, do object detection to discover region of interest
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+output_file = "output_tracker.mp4"
+fps = 24
 ret, frame = cap.read()
-if ret:
-    mod.detect_objects(frame)
+frame_height, frame_width, _ = frame.shape
+
+out = cv2.VideoWriter(output_file, fourcc, fps, (frame_width, frame_height))
+
+# to perform object detection every X frame
+frame_count = 0
 
 # loop through all frames in video
 while True:
@@ -150,19 +249,40 @@ while True:
         print("End of the video")
         break
 
+    if frame_count % 24 == 0:
+        boxes = mod.detect_objects(frame)
+        tracker.initialize(frame, boxes)
+
     # for subsequent tracking, invoke the .track_object() method
-    p1, p2 = mod.track_objects(frame)
-    cv2.rectangle(frame, p1, p2, (255, 0, 0), 2, 1)
+    tracked_boxes = tracker.update(frame)
+
+    for (p1, p2) in tracked_boxes:
+        cv2.rectangle(frame, p1, p2, (255, 0, 0), 2, 1)
 
     # get t2 for framerate calculation
     t2 = cv2.getTickCount()
 
     # print framerate into frame
-    cv2.putText(frame, f"FPS: {calculate_framerate(t1, t2)}", (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2,
+    frame_rate = calculate_framerate(t1, t2)
+
+    # if framerate is lower than 24, display a red FPS text
+    if frame_rate < 24:
+        color = (0, 0, 255)
+    else:
+        color = (255, 255, 0)
+
+    cv2.putText(frame, f"FPS: {frame_rate}", (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2,
                 cv2.LINE_AA)
-    cv2.imshow("Dot Vision", frame)
+
+    out.write(frame)
+
+    # cv2.imshow("Dot Vision", frame)
+
     if cv2.waitKey(1) & 0xFF == ord("q") or cv2.waitKey(1) & 0xFF == 27:  # if user enter q or ESC key
         break
 
+    frame_count += 1
+
 cap.release()
+out.release()
 cv2.destroyAllWindows()
