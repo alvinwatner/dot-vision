@@ -79,10 +79,10 @@ class ImageApp(QWidget):
         self.width_input1.setPlaceholderText('Enter width')
         self.height_input1 = QLineEdit(self)
         self.height_input1.setPlaceholderText('Enter height')
-        upload_button1 = QPushButton('Upload Image 1')
+        upload_button1 = QPushButton('Upload 3D Image')
         upload_button1.clicked.connect(lambda: self.load_image(self.image1_viewer, self.width_input1.text(), self.height_input1.text()))
-        save_button1 = QPushButton('Save Coordinates 1')
-        save_button1.clicked.connect(lambda: self.save_coordinates(self.image1_viewer))
+        save_button1 = QPushButton('Save Coordinates 3D')
+        save_button1.clicked.connect(lambda: self.save_coordinates(self.image1_viewer, '3D'))
 
         # Create input fields and buttons for Image 2
         self.width_input2 = QLineEdit(self)
@@ -99,10 +99,10 @@ class ImageApp(QWidget):
         self.height_input2.textChanged.connect(lambda: self.check_and_resize_image(self.image2_viewer, self.width_input2.text(), self.height_input2.text()))
 
 
-        upload_button2 = QPushButton('Upload Image 2')
+        upload_button2 = QPushButton('Upload 2D Image')
         upload_button2.clicked.connect(lambda: self.load_image(self.image2_viewer, self.width_input2.text(), self.height_input2.text()))
-        save_button2 = QPushButton('Save Coordinates 2')
-        save_button2.clicked.connect(lambda: self.save_coordinates(self.image2_viewer))
+        save_button2 = QPushButton('Save Coordinates 2D')
+        save_button2.clicked.connect(lambda: self.save_coordinates(self.image2_viewer, '2D'))
 
         # Set up layout for each column
         column1_layout = QVBoxLayout()
@@ -175,13 +175,13 @@ class ImageApp(QWidget):
         image_label = 'Image 1' if viewer == self.image1_viewer else 'Image 2'
         self.hover_coords_label.setText(f"Hover Coordinates: {point.x()}, {point.y()} on {image_label}")
 
-    def save_coordinates(self, viewer):
+    def save_coordinates(self, viewer, type):
         # Prompt user to select the directory to save the data
         directory = QFileDialog.getExistingDirectory(self, 'Select Directory')
         if directory:
             # Construct file paths
-            coordinates_path = os.path.join(directory, 'coordinates.pkl')
-            image_path = os.path.join(directory, 'image.png')
+            coordinates_path = os.path.join(directory, f'coordinates_{type}.pkl')
+            image_path = os.path.join(directory, f'image_{type}.png')
 
             # Save coordinates
             with open(coordinates_path, 'wb') as f:
