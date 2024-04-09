@@ -160,3 +160,4 @@ cython_debug/
 .idea/
 output.*
 .ignorables/
+output_tracker.mp4
