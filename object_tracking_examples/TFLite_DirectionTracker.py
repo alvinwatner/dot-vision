@@ -153,7 +153,7 @@ imH = video.get(cv2.CAP_PROP_FRAME_HEIGHT)
 #
 # fourcc = cv2.VideoWriter_fourcc(*'MP4V')
 fourcc = cv2.VideoWriter_fourcc('X', 'V', 'I', 'D')
-out = cv2.VideoWriter('output.avi', fourcc, 20.0, (640, 480))
+out = cv2.VideoWriter('../output.avi', fourcc, 20.0, (640, 480))
 
 # Newly added co-ord stuff
 leftcount = 0
