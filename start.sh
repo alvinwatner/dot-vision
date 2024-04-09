@@ -1,3 +1,3 @@
 pip install -r requirements.txt
-python3 TFLite_DirectionTracker.py --edgetpu
+python3 dot_vision.py --accelerator tpu
 ls -lah

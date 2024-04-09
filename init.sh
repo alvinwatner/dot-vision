@@ -1,6 +1,5 @@
-# initialization script that is meant to run on the host machine (your laptop/pc)
+# initialization script that is meant to run on the coral board
 
-mdt shell
 rm -rf dot_vision/
 git clone https://github.com/alvinwatner/dot-vision
 cd dot-vision || exit
