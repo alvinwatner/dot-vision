@@ -6,7 +6,7 @@ from tflite_runtime.interpreter import Interpreter, load_delegate
 import numpy as np
 import pickle
 from sklearn.metrics import mean_squared_error
-
+import json
 
 # check whether to take a video from source or from live feed.
 parser = argparse.ArgumentParser()
@@ -240,6 +240,17 @@ while True:
 mse = mean_squared_error(ground_truths, y_pred)
 avg_fps = sum(fpss) / len(fpss)
 print(f"mse {mse} | avg_fps {avg_fps} | objects {tracked_boxes}")
+result = {
+    "mse": mse,
+    "avg_fps": avg_fps
+}
+
+# Serializing json
+json_object = json.dumps(result, indent=4)
+ 
+# Writing to sample.json
+with open("eval_result.json", "w") as outfile:
+    outfile.write(json_object)
 
 cap.release()
 cv2.destroyAllWindows()
