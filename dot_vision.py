@@ -2,9 +2,11 @@ import argparse
 from pathlib import Path
 from typing import List
 import cv2
-from tflite_runtime.interpreter import Interpreter, load_delegate
 import numpy as np
 import pickle
+from auxiliary.model_interpreter import ModelInterpreter
+from auxiliary.tracker import Tracker
+from auxiliary.utils import calculate_framerate, tuples_to_nparray, nparray_to_tuples
 
 """
 idea: using an object detection model with object tracking algorithm
@@ -63,179 +65,11 @@ else:
         raise ValueError("Must enter --vidsource if not using live feed")
     cap = cv2.VideoCapture(video_source)
 
-
 # encapsulate interpreter to easily access its properties
-class ModelInterpreter:
-    def __init__(self, model_path, threshold=threshold):
-        if accelerator == "cpu":
-            self.interpreter = Interpreter(model_path=model_path)
-        elif accelerator == "tpu":
-            self.interpreter = Interpreter(model_path=model_path,
-                                           experimental_delegates=[load_delegate("libedgetpu.so.1.0")])
-        self.interpreter.allocate_tensors()
-        self.input_details = self.interpreter.get_input_details()
-        self.output_details = self.interpreter.get_output_details()
-        self.height = self.input_details[0]["shape"][1]
-        self.width = self.input_details[0]["shape"][2]
-        self.frame_width: int
-        self.frame_height: int
-        self.threshold = threshold
-
-        # all detected objects will be put in the index
-        self.input_index = self.input_details[0]["index"]
-
-        self.frame: List = []
-
-    def preprocess_image(self):
-        frame_to_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-        frame_resized = cv2.resize(frame_to_rgb, (self.width, self.height))
-
-        # turn 3D array into 4D [1xHxWx3]
-        expanded_dims = np.expand_dims(frame_resized, axis=0)
-        self.frame = expanded_dims
-
-    """
-    input: frame
-    output: boxes, classes, score
-    
-    get the frame, set the input, get the output
-    """
-
-    def detect_objects(self, frame):
-        self.frame = frame
-        self.frame_height, self.frame_width, _ = frame.shape
-        self.preprocess_image()
-        self.interpreter.set_tensor(self.input_index, self.frame)
-        self.interpreter.invoke()
-
-        # tensorflow boxes has a different bounding box format than opencv
-        return self.filter_boxes()
-
-    def filter_boxes(self):
-        tf_boxes = self.get_tensor_by_index(0)
-        classes = self.get_tensor_by_index(1)
-        scores = self.get_tensor_by_index(2)
-
-        filtered_boxes = []
-        for i in range(len(scores)):
-            if scores[i] >= self.threshold:
-                if LABELS[int(classes[i])] == "person":
-                    filtered_boxes.append(tf_boxes[i])
-        return filtered_boxes
-
-    def get_tensor_by_index(self, index):
-        """
-        indices:
-        0 for boxes
-        1 for classes
-        2 for confidence scores
-        """
-        return self.interpreter.get_tensor(self.output_details[index]["index"])[0]
 
 
-class Tracker:
-
-    def __init__(self):
-        """
-        initialize the tracker object
-
-        :param frame: opencv2 frame object
-        :param boxes: tensorflow lite bounding boxes
-        :return: None
-        """
-        # the algorithm used for individual tracker
-        self.tracker = cv2.TrackerMIL
-
-        self.boxes = []
-
-        # container for all available trackers
-        self.trackers = []
-        # self.initialize(frame, boxes)
-
-    def convert_tf_boxes_to_opencv(self, boxes):
-        """
-        convert all tensorflow lite bounding boxes into
-        opencv2 bounding box format
-
-        :param boxes: tensorflow lite bounding boxes
-        :return: None
-        """
-        self.boxes = []
-        for box in boxes:
-            ymin, xmin, ymax, xmax = box
-            xmin = int(xmin * self.frame_width)
-            xmax = int(xmax * self.frame_width)
-            ymin = int(ymin * self.frame_height)
-            ymax = int(ymax * self.frame_height)
-            width = xmax - xmin
-            height = ymax - ymin
-
-            cv_box = (xmin, ymin, width, height)
-            self.boxes.append(cv_box)
-
-    def initialize(self, frame, boxes):
-        """
-        initialize trackers for object tracking
-
-        :param frame: opencv2 frame object
-        :param boxes: tensorflow lite bounding boxes
-        """
-        self.frame_height, self.frame_width, _ = frame.shape
-
-        self.convert_tf_boxes_to_opencv(boxes)
-
-        # remove all existing tracker
-        self.trackers.clear()
-
-        for box in self.boxes:
-            tracker = self.tracker.create()
-            tracker.init(frame, box)
-            self.trackers.append(tracker)
-
-    def update(self, frame):
-        """
-        update trackers for the given frame
-
-        :param frame: opencv2 frame object
-        :return: tuple containing the bounding box for the tracked object
-        """
-        p1_p2 = []
-
-        for index, tracker in enumerate(self.trackers):
-            ret, box = tracker.update(frame)
-
-            # if tracking successful, add bounding box
-            if ret:
-                p1 = (int(box[0]), int(box[1]))
-                p2 = (int(box[0] + box[2]), int(box[1] + box[3]))
-                p1_p2.append((p1, p2))
-
-            # else, remove the tracker from memory
-            else:
-                self.trackers.pop(index)
-        return p1_p2
-
-
-mod = ModelInterpreter(MODEL_PATH)
+mod = ModelInterpreter(model_path=MODEL_PATH, threshold=threshold, accelerator=accelerator, labels=LABELS)
 tracker = Tracker()
-
-
-def calculate_framerate(t1, t2):
-    frequency = cv2.getTickFrequency()
-    time = (t2 - t1) / frequency
-    framerate = 1 / time
-    return round(framerate)
-
-
-def tuples_to_nparray(tuple_list):
-    # Convert each tuple in the list to a list
-    return np.array([list(t) for t in tuple_list], dtype='float32')
-
-
-def nparray_to_tuples(np_array):
-    # Convert numpy array back to a list of tuples, assuming the shape of np_array is (n, 2)
-    return [tuple(map(int, np.round(row))) for row in np_array]
-
 
 # convert coors from list of tuples to list of list
 pts_src = tuples_to_nparray(coors3d)
@@ -324,7 +158,8 @@ while True:
 
     # Process each tracked box for bottom center calculation, drawing on frame, and transformation
     for (p1, p2) in tracked_boxes:
-        cv2.rectangle(resized_frame, p1, p2, (255, 0, 0), 2, 1)  # Draw bounding box
+        # Draw bounding box
+        cv2.rectangle(resized_frame, p1, p2, (255, 0, 0), 2, 1)
 
         # Calculate bottom center and draw circle
         bottom_center = ((p1[0] + p2[0]) // 2, p2[1])
