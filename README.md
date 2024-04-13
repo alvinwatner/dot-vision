@@ -16,25 +16,15 @@ An innovative interactive art installation designed for a coffee shop setting. T
 
 Deployment of this project onto a coral board consists of these steps
 
-Clone the project
-
-```bash
-git clone https://github.com/alvinwatner/dot-vision
-cd dot-vision
-```
-
 Get into your board
 ```bash
 mdt shell
 ```
 
-Run the `init.sh`
-
+Run the initialization script
 ```bash
-chmod +x init.sh
-./init.sh
+wget https://raw.githubusercontent.com/alvinwatner/dot-vision/main/init.sh -O - | bash 
 ```
-
 
 
 ## Run Locally
