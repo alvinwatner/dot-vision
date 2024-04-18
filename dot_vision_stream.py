@@ -10,10 +10,7 @@ import cv2
 from auxiliary.model_interpreter import ModelInterpreter
 from auxiliary.tracker import Tracker
 from auxiliary.utils import calculate_framerate, tuples_to_nparray, nparray_to_tuples
-
-
-app = Flask(__name__)
-
+from web_display.display import app
 
 """
 idea: using an object detection model with object tracking algorithm
@@ -73,8 +70,6 @@ else:
     cap = cv2.VideoCapture(video_source)
 
 # encapsulate interpreter to easily access its properties
-
-
 mod = ModelInterpreter(model_path=MODEL_PATH, threshold=threshold, accelerator=accelerator, labels=LABELS)
 tracker = Tracker()
 
@@ -129,19 +124,19 @@ window_name = "Dot Vision"
 # Adjust the window size for the combined image
 # headless off
 # assuming acceleration tpu means headless
-if accelerator != "tpu":
-    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
-    cv2.resizeWindow(window_name, total_width, max_height)
+# if accelerator != "tpu":
+#     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+#     cv2.resizeWindow(window_name, total_width, max_height)
 
 out = cv2.VideoWriter(output_file, fourcc, fps, (total_width, max_height))
 
-# to perform object detection every X frame
-frame_count = 0
-
 original_image2d = image2d.copy()
 
+
 def gen_frames():
+    # to perform object detection every X frame
     frame_count = 0
+
     # loop through all frames in video
     while True:
         # Reset image2d to the original state at the start of each iteration
@@ -179,7 +174,7 @@ def gen_frames():
             transformed_coor = np.squeeze(transformed_coor)
 
             cv2.circle(image2d, (int(transformed_coor[0]), int(transformed_coor[1])), radius=5, color=(0, 255, 0),
-                    thickness=-2)
+                       thickness=-2)
 
         # get t2 for framerate calculation
         t2 = cv2.getTickCount()
@@ -208,41 +203,11 @@ def gen_frames():
         ret, buffer = cv2.imencode('.jpg', combined_image)
         frame = buffer.tobytes()
 
-
         frame_count += 1
 
         yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # Concatenate frame data        
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # Concatenate frame data
 
-
-
-@app.route('/video_feed')
-def video_feed():
-    # Return the response generated along with the specific media
-    # type (mime type)
-    return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
-@app.route('/')
-def index():
-    # This route serves the HTML page that embeds the video feed
-    # This endpoint serves the HTML page that embeds the video feed
-    return render_template_string('''
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>ConsultNTA - Dot Vision</title>
-    </head>
-    <body>
-        <h1>ConsultNTA - Dot Vision</h1>
-        <div style="background: black; padding: 10px;">
-            <img src="{{ url_for('video_feed') }}" alt="Video Stream" style="display: block; margin: auto; width: 80%;">
-        </div>
-    </body>
-    </html>
-    ''')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3001) 
-
-
+    app.run(host='0.0.0.0', port=3001)

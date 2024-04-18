@@ -1,9 +1,6 @@
 from flask import Flask, Response, render_template
-from dot_vision_stream import gen_frames, app
 
-@app.route('/video_stream')
-def video_stream():
-    return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+app = Flask(__name__)
 
 
 @app.get('/')
