@@ -209,33 +209,5 @@ def gen_frames():
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # Concatenate frame data
 
 
-# @app.route('/video_feed')
-# def video_feed():
-#     # Return the response generated along with the specific media
-#     # type (mime type)
-#     return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
-
-# @app.route('/')
-# def index():
-#     # This route serves the HTML page that embeds the video feed
-#     # This endpoint serves the HTML page that embeds the video feed
-#     return render_template_string('''
-#     <!DOCTYPE html>
-#     <html lang="en">
-#     <head>
-#         <meta charset="UTF-8">
-#         <title>ConsultNTA - Dot Vision</title>
-#     </head>
-#     <body>
-#         <h1>ConsultNTA - Dot Vision</h1>
-#         <div style="background: black; padding: 10px;">
-#             <img src="{{ url_for('video_feed') }}" alt="Video Stream" style="display: block; margin: auto; width: 80%;">
-#         </div>
-#     </body>
-#     </html>
-#     ''')
-
-
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=3001)
