@@ -133,81 +133,79 @@ frame_count = 0
 
 original_image2d = image2d.copy()
 
-process_video_frames(original_image2d, cap,tracker, mod, frame_width, frame_height, h, max_height, total_width, out, window_name, accelerator)
+# loop through all frames in video
+while True:
+    # Reset image2d to the original state at the start of each iteration
+    image2d = original_image2d.copy()
 
-# # loop through all frames in video
-# while True:
-#     # Reset image2d to the original state at the start of each iteration
-#     image2d = original_image2d.copy()
+    # get t1 for framerate calculation
+    t1 = cv2.getTickCount()
 
-#     # get t1 for framerate calculation
-#     t1 = cv2.getTickCount()
+    ret, frame = cap.read()
+    if not ret:
+        print("End of the video")
+        break
 
-#     ret, frame = cap.read()
-#     if not ret:
-#         print("End of the video")
-#         break
+    # Resize the frame to match the dimensions of the reference image
+    resized_frame = cv2.resize(frame, (frame_width, frame_height))
 
-#     # Resize the frame to match the dimensions of the reference image
-#     resized_frame = cv2.resize(frame, (frame_width, frame_height))
+    if frame_count % 24 == 0:
+        boxes = mod.detect_objects(resized_frame)
+        tracker.initialize(resized_frame, boxes)
 
-#     if frame_count % 24 == 0:
-#         boxes = mod.detect_objects(resized_frame)
-#         tracker.initialize(resized_frame, boxes)
+    # for subsequent tracking, invoke the .track_object() method
+    tracked_boxes = tracker.update(resized_frame)
 
-#     # for subsequent tracking, invoke the .track_object() method
-#     tracked_boxes = tracker.update(resized_frame)
+    # Process each tracked box for bottom center calculation, drawing on frame, and transformation
+    for (p1, p2) in tracked_boxes:
+        # Draw bounding box
+        cv2.rectangle(resized_frame, p1, p2, (255, 0, 0), 2, 1)
 
-#     # Process each tracked box for bottom center calculation, drawing on frame, and transformation
-#     for (p1, p2) in tracked_boxes:
-#         # Draw bounding box
-#         cv2.rectangle(resized_frame, p1, p2, (255, 0, 0), 2, 1)
+        # Calculate bottom center and draw circle
+        bottom_center = ((p1[0] + p2[0]) // 2, p2[1])
+        cv2.circle(resized_frame, bottom_center, 4, (255, 255, 0), -1)
 
-#         # Calculate bottom center and draw circle
-#         bottom_center = ((p1[0] + p2[0]) // 2, p2[1])
-#         cv2.circle(resized_frame, bottom_center, 4, (255, 255, 0), -1)
+        source_coor = np.array([[bottom_center]], dtype='float32')
+        transformed_coor = cv2.perspectiveTransform(source_coor, h)
 
-#         source_coor = np.array([[bottom_center]], dtype='float32')
-#         transformed_coor = cv2.perspectiveTransform(source_coor, h)
+        transformed_coor = np.squeeze(transformed_coor)
 
-#         transformed_coor = np.squeeze(transformed_coor)
+        cv2.circle(image2d, (int(transformed_coor[0]), int(transformed_coor[1])), radius=5, color=(0, 255, 0),
+                   thickness=-2)
 
-#         cv2.circle(image2d, (int(transformed_coor[0]), int(transformed_coor[1])), radius=5, color=(0, 255, 0),
-#                    thickness=-2)
+    # get t2 for framerate calculation
+    t2 = cv2.getTickCount()
 
-#     # get t2 for framerate calculation
-#     t2 = cv2.getTickCount()
+    # print framerate into frame
+    frame_rate = calculate_framerate(t1, t2)
 
-#     # print framerate into frame
-#     frame_rate = calculate_framerate(t1, t2)
+    # if framerate is lower than 24, display a red FPS text
+    if frame_rate < 24:
+        color = (0, 0, 255)
+    else:
+        color = (255, 255, 0)
 
-#     # if framerate is lower than 24, display a red FPS text
-#     if frame_rate < 24:
-#         color = (0, 0, 255)
-#     else:
-#         color = (255, 255, 0)
+    cv2.putText(resized_frame, f"FPS: {frame_rate}", (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2,
+                cv2.LINE_AA)
 
-#     cv2.putText(resized_frame, f"FPS: {frame_rate}", (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2,
-#                 cv2.LINE_AA)
+    # Create a blank image to accommodate both the frame and the PNG image
+    combined_image = np.zeros((max_height, total_width, 3), dtype=np.uint8)
 
-#     # Create a blank image to accommodate both the frame and the PNG image
-#     combined_image = np.zeros((max_height, total_width, 3), dtype=np.uint8)
+    # Place the video frame in the combined image
+    combined_image[:frame_height, :frame_width] = resized_frame
 
-#     # Place the video frame in the combined image
-#     combined_image[:frame_height, :frame_width] = resized_frame
+    # Place the PNG image in the combined image next to the video frame
+    combined_image[:image_height, frame_width:frame_width + image_width] = image2d
 
-#     # Place the PNG image in the combined image next to the video frame
-#     combined_image[:image_height, frame_width:frame_width + image_width] = image2d
+    out.write(combined_image)
 
-#     out.write(combined_image)
+    if accelerator != "tpu":
+        cv2.imshow(window_name, combined_image)
 
-#     if accelerator != "tpu":
-#         cv2.imshow(window_name, combined_image)
+    if cv2.waitKey(1) & 0xFF == ord("q") or cv2.waitKey(1) & 0xFF == 27:  # if user enter q or ESC key
+        break
 
-#     if cv2.waitKey(1) & 0xFF == ord("q") or cv2.waitKey(1) & 0xFF == 27:  # if user enter q or ESC key
-#         break
-
-#     frame_count += 1
+    frame_count += 1
 
 cap.release()
 out.release()

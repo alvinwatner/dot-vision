@@ -17,7 +17,19 @@ def nparray_to_tuples(np_array):
     # Convert numpy array back to a list of tuples, assuming the shape of np_array is (n, 2)
     return [tuple(map(int, np.round(row))) for row in np_array]
 
-def process_video_frames(original_image2d, cap, tracker, mod, frame_width, frame_height, h, max_height, total_width, out, window_name, accelerator):
+def process_video_frames(original_image2d, 
+                         cap, 
+                         tracker, 
+                         mod, 
+                         frame_width, 
+                         frame_height, 
+                         h, 
+                         max_height, 
+                         total_width, 
+                         out, 
+                         window_name, 
+                         accelerator,
+                         ):
     frame_count = 0
     while True:
         # Reset image2d to the original state at the start of each iteration

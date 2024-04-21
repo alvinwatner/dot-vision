@@ -2,14 +2,9 @@ import argparse
 from pathlib import Path
 from typing import List
 import cv2
-from tflite_runtime.interpreter import Interpreter, load_delegate
-import numpy as np
 import pickle
-from flask import Flask, Response, render_template_string
 import cv2
-from auxiliary.model_interpreter import ModelInterpreter
-from auxiliary.tracker import Tracker
-from auxiliary.utils import calculate_framerate, tuples_to_nparray, nparray_to_tuples
+from auxiliary.auto_mapper import AutoMapper
 from web_display.display import app
 
 """
@@ -20,6 +15,7 @@ tracker: lightweight object tracker
 
 # check whether to take a video from source or from live feed.
 parser = argparse.ArgumentParser()
+parser.add_argument("--display", help="Display output target", choices=["cv2", "web"], default="web")
 parser.add_argument("--vidsource", help="Video source for tracking", default='samples/input_video.mp4')
 parser.add_argument("--layout2Ddir", help="2D layout image", default='coordinates/2d_image.png')
 parser.add_argument("--layout3Ddir", help="3D layout image", default='coordinates/3d_image.png')
@@ -38,6 +34,7 @@ threshold = args.threshold
 image2Ddir = args.layout2Ddir
 image3Ddir = args.layout3Ddir
 accelerator = args.accelerator
+display = args.display
 
 coor2Ddir = args.coor2Ddir
 coor3Ddir = args.coor3Ddir
@@ -69,173 +66,23 @@ else:
         raise ValueError("Must enter --vidsource if not using live feed")
     cap = cv2.VideoCapture(video_source)
 
-# encapsulate interpreter to easily access its properties
-mod = ModelInterpreter(model_path=MODEL_PATH, threshold=threshold, accelerator=accelerator, labels=LABELS)
-tracker = Tracker()
-
-# convert coors from list of tuples to list of list
-pts_src = tuples_to_nparray(coors3d)
-pts_dst = tuples_to_nparray(coors2d)
-
-# calculate matrix H
-h, status = cv2.findHomography(pts_src, pts_dst)
-
-fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-output_file = "output_tracker.mp4"
-fps = 24
-ret, frame = cap.read()
-image2d = cv2.imread(image2Ddir)
-
-# This is necessary as for the 3D->2D mapping to works.
-# Because the homography matrix created from predefined coordinates
-# that extracted from a specific image size. This image size for 3D and
-# 2D need to be preserved on each frame
-image3D = cv2.imread(image3Ddir)
-if image3D is None:
-    print(f"Failed to load 3D layout image from {image3D}")
-    exit()
-# Video frame dimensions
-frame_height, frame_width = image3D.shape[:2]
-
-# Ensure the video is opened successfully
-if not cap.isOpened():
-    print("Failed to read video")
-    cap.release()
-    cv2.destroyAllWindows()
-    exit()
-
-# Read the first frame to get the video frame size (assuming all frames are of the same size)
-ret, frame = cap.read()
-if not ret:
-    print("Failed to read the first frame of the video")
-    cap.release()
-    cv2.destroyAllWindows()
-    exit()
-
-# PNG image dimensions
-image_height, image_width = image2d.shape[:2]
-
-# Calculate combined dimensions
-max_height = max(frame_height, image_height)
-total_width = frame_width + image_width
-
-window_name = "Dot Vision"
-
-# Adjust the window size for the combined image
-# headless off
-# assuming acceleration tpu means headless
-# if accelerator != "tpu":
-#     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
-#     cv2.resizeWindow(window_name, total_width, max_height)
-
-out = cv2.VideoWriter(output_file, fourcc, fps, (total_width, max_height))
-
-original_image2d = image2d.copy()
-
-
-def gen_frames():
-    # to perform object detection every X frame
-    frame_count = 0
-
-    # loop through all frames in video
-    while True:
-        # Reset image2d to the original state at the start of each iteration
-        image2d = original_image2d.copy()
-
-        # get t1 for framerate calculation
-        t1 = cv2.getTickCount()
-
-        ret, frame = cap.read()
-        if not ret:
-            print("End of the video")
-            break
-
-        # Resize the frame to match the dimensions of the reference image
-        resized_frame = cv2.resize(frame, (frame_width, frame_height))
-
-        if frame_count % 24 == 0:
-            boxes = mod.detect_objects(resized_frame)
-            tracker.initialize(resized_frame, boxes)
-
-        # for subsequent tracking, invoke the .track_object() method
-        tracked_boxes = tracker.update(resized_frame)
-
-        # Process each tracked box for bottom center calculation, drawing on frame, and transformation
-        for (p1, p2) in tracked_boxes:
-            cv2.rectangle(resized_frame, p1, p2, (255, 0, 0), 2, 1)  # Draw bounding box
-
-            # Calculate bottom center and draw circle
-            bottom_center = ((p1[0] + p2[0]) // 2, p2[1])
-            cv2.circle(resized_frame, bottom_center, 4, (255, 255, 0), -1)
-
-            source_coor = np.array([[bottom_center]], dtype='float32')
-            transformed_coor = cv2.perspectiveTransform(source_coor, h)
-
-            transformed_coor = np.squeeze(transformed_coor)
-
-            cv2.circle(image2d, (int(transformed_coor[0]), int(transformed_coor[1])), radius=5, color=(0, 255, 0),
-                       thickness=-2)
-
-        # get t2 for framerate calculation
-        t2 = cv2.getTickCount()
-
-        # print framerate into frame
-        frame_rate = calculate_framerate(t1, t2)
-
-        # if framerate is lower than 24, display a red FPS text
-        if frame_rate < 24:
-            color = (0, 0, 255)
-        else:
-            color = (255, 255, 0)
-
-        cv2.putText(resized_frame, f"FPS: {frame_rate}", (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2,
-                    cv2.LINE_AA)
-
-        # Create a blank image to accommodate both the frame and the PNG image
-        combined_image = np.zeros((max_height, total_width, 3), dtype=np.uint8)
-
-        # Place the video frame in the combined image
-        combined_image[:frame_height, :frame_width] = resized_frame
-
-        # Place the PNG image in the combined image next to the video frame
-        combined_image[:image_height, frame_width:frame_width + image_width] = image2d
-
-        ret, buffer = cv2.imencode('.jpg', combined_image)
-        frame = buffer.tobytes()
-
-        frame_count += 1
-
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # Concatenate frame data
-
-
-# @app.route('/video_feed')
-# def video_feed():
-#     # Return the response generated along with the specific media
-#     # type (mime type)
-#     return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
-
-# @app.route('/')
-# def index():
-#     # This route serves the HTML page that embeds the video feed
-#     # This endpoint serves the HTML page that embeds the video feed
-#     return render_template_string('''
-#     <!DOCTYPE html>
-#     <html lang="en">
-#     <head>
-#         <meta charset="UTF-8">
-#         <title>ConsultNTA - Dot Vision</title>
-#     </head>
-#     <body>
-#         <h1>ConsultNTA - Dot Vision</h1>
-#         <div style="background: black; padding: 10px;">
-#             <img src="{{ url_for('video_feed') }}" alt="Video Stream" style="display: block; margin: auto; width: 80%;">
-#         </div>
-#     </body>
-#     </html>
-#     ''')
-
-
+ensemble_model = AutoMapper(
+    model_path = MODEL_PATH,
+    threshold= threshold,
+    accelerator=accelerator, 
+    labels=LABELS,
+    image2Ddir=image2Ddir,
+    image3Ddir=image3Ddir,
+    cap=cap,
+    coors3d=coors3d,
+    coors2d=coors2d
+)
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3001)
+    if (display == 'web'):
+        print("Display is set to web, invoking auto_mapper")
+        app.run(host='0.0.0.0', port=3001)
+
+    if (display == 'cv2'):
+        print("Display is set to cv2, invoking auto_mapper")
+        ensemble_model.run(imshow=True, save_output=True)
+        print("auto_mapper has been called")
