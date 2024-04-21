@@ -5,38 +5,40 @@ from auxiliary.model_interpreter import ModelInterpreter
 from auxiliary.tracker import Tracker
 from auxiliary.utils import calculate_framerate, tuples_to_nparray, nparray_to_tuples
 
+
 class AutoMapper:
-    def __init__(self, 
+    def __init__(self,
                  model_path,
                  threshold,
                  accelerator,
                  labels,
-                 image2Ddir, 
-                 image3Ddir, 
-                 cap, 
+                 image2Ddir,
+                 image3Ddir,
+                 cap,
                  coors3d,
                  coors2d,
                  ):
-        self.detector_mod = ModelInterpreter(model_path=model_path, threshold=threshold, accelerator=accelerator, labels=labels)
+        self.detector_mod = ModelInterpreter(model_path=model_path, threshold=threshold, accelerator=accelerator,
+                                             labels=labels)
         self.image2d = cv2.imread(image2Ddir)
         self.image3d = cv2.imread(image3Ddir)
-        self.cap = cap 
+        self.cap = cap
         self.tracker = Tracker()
         self.H, _ = cv2.findHomography(tuples_to_nparray(coors3d), tuples_to_nparray(coors2d))
         self.frame3d_height, self.frame3d_width = self.image3d.shape[:2]
         self.frame2d_height, self.frame2d_width = self.image2d.shape[:2]
         self.max_height = max(self.frame3d_height, self.frame2d_height)
-        self.total_width = self.frame3d_width + self.frame2d_width    
+        self.total_width = self.frame3d_width + self.frame2d_width
         print("I am initialized")
-    
-    def run(self, 
-                 is_stream: bool = False,
-                 imshow: bool = False,
-                 save_output: bool = True,
-                 ):
-                
-        try : 
-            print("Entering __call__")        
+
+    def run(self,
+            is_stream: bool = False,
+            imshow: bool = False,
+            save_output: bool = True,
+            ):
+
+        try:
+            print("Entering __call__")
             if save_output:
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                 output_file = "output_tracker.mp4"
@@ -46,9 +48,9 @@ class AutoMapper:
             if imshow:
                 window_name = "Dot Vision"
                 cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
-                cv2.resizeWindow(window_name, self.total_width, self.max_height)   
+                cv2.resizeWindow(window_name, self.total_width, self.max_height)
 
-            # to perform object detection every X frame
+                # to perform object detection every X frame
             frame_count = 0
 
             original_image2d = self.image2d.copy()
@@ -89,8 +91,9 @@ class AutoMapper:
 
                     transformed_coor = np.squeeze(transformed_coor)
 
-                    cv2.circle(image2d, (int(transformed_coor[0]), int(transformed_coor[1])), radius=5, color=(0, 255, 0),
-                            thickness=-2)
+                    cv2.circle(image2d, (int(transformed_coor[0]), int(transformed_coor[1])), radius=5,
+                               color=(0, 255, 0),
+                               thickness=-2)
 
                 # get t2 for framerate calculation
                 t2 = cv2.getTickCount()
@@ -114,7 +117,8 @@ class AutoMapper:
                 combined_image[:self.frame3d_height, :self.frame3d_width] = resized_frame
 
                 # Place the PNG image in the combined image next to the video frame
-                combined_image[:self.frame2d_height, self.frame3d_width:self.frame3d_width + self.frame2d_width] = image2d
+                combined_image[:self.frame2d_height,
+                self.frame3d_width:self.frame3d_width + self.frame2d_width] = image2d
 
                 frame_count += 1
 
@@ -124,13 +128,15 @@ class AutoMapper:
                 if imshow:
                     cv2.imshow(window_name, combined_image)
                     if cv2.waitKey(1) & 0xFF == ord("q") or cv2.waitKey(1) & 0xFF == 27:  # if user enter q or ESC key
-                        break                
+                        break
 
                 if is_stream:
                     ret, buffer = cv2.imencode('.jpg', combined_image)
                     buffer_frame = buffer.tobytes()
+
+                    # this the cause of the problem
                     yield (b'--frame\r\n'
-                        b'Content-Type: image/jpeg\r\n\r\n' + buffer_frame + b'\r\n')  # Concatenate frame data
+                           b'Content-Type: image/jpeg\r\n\r\n' + buffer_frame + b'\r\n')  # Concatenate frame data
 
             if imshow:
                 self.cap.release()
@@ -138,7 +144,3 @@ class AutoMapper:
                 cv2.destroyAllWindows()
         except Exception as e:
             print(f"Error in __call__: {e}")
-
-
-
-

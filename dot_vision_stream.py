@@ -5,6 +5,8 @@ import cv2
 import pickle
 import cv2
 from auxiliary.auto_mapper import AutoMapper
+
+# causing the first "I am initialized"
 from web_display.display import app
 
 """
