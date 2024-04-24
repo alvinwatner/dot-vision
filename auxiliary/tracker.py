@@ -57,8 +57,32 @@ class Tracker:
 
         for box in self.boxes:
             tracker = self.tracker.create()
-            tracker.init(frame, box)
+            if self._is_detection_valid(frame, box):
+                tracker.init(frame, box)
+            else:
+                continue
             self.trackers.append(tracker)
+
+    @staticmethod
+    def _is_detection_valid(frame, box):
+        if frame is None or not frame.size:
+            print("Frame is invalid")
+            return False
+
+        # bounding box is containing these values (x, y, width, height)
+        if any(dim < 0 for dim in box):
+            print("Bounding box dimension is invalid")
+            return False
+        elif box[2] <= 0 or box[3] <= 0:
+            print(f"Bounding box height: {box[2]} or width: {box[3]} is invalid")
+            return False
+        elif box[0] + box[2] > frame.shape[1]:
+            print(f"Bounding box x: {box[0]} and height: {box[2]} is invalid, allowed value is no more than {frame.shape[1]}")
+            return False
+        elif box[1] + box[3] > frame.shape[0]:
+            print(f"Bounding box y: {box[1]} and width: {box[3]} is invalid, allowed value is no more than {frame.shape[0]}")
+            return False
+        return True
 
     def update(self, frame):
         """
