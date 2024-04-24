@@ -67,9 +67,9 @@ else:
     cap = cv2.VideoCapture(video_source)
 
 ensemble_model = AutoMapper(
-    model_path = MODEL_PATH,
-    threshold= threshold,
-    accelerator=accelerator, 
+    model_path=MODEL_PATH,
+    threshold=threshold,
+    accelerator=accelerator,
     labels=LABELS,
     image2Ddir=image2Ddir,
     image3Ddir=image3Ddir,
