@@ -69,6 +69,10 @@ class Tracker:
         """
         p1_p2 = []
 
+        # if there is no tracker, return empty list
+        if not len(self.trackers):
+            return p1_p2
+
         for index, tracker in enumerate(self.trackers):
             ret, box = tracker.update(frame)
 
