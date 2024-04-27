@@ -41,6 +41,16 @@ class AutoMapper:
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + buffer_frame + b'\r\n')
 
+    def detect_frame_at_interval(self, interval, frame, frame_count):
+        # every 24 frames, perform object detection and re-initialize the trackers
+        if frame_count % interval == 0:
+            boxes = self.detector_mod.detect_objects(frame)
+            self.tracker.initialize(frame, boxes)
+
+        # for subsequent tracking, invoke the .track_object() method
+        tracked_boxes = self.tracker.update(frame)
+        return tracked_boxes
+
     def _process_frame(self, frame_count):
         """Process video frames and return the combined image."""
         # Reset image2d to the original state at the start of each iteration
@@ -58,13 +68,7 @@ class AutoMapper:
         # Resize the frame to match the dimensions of the reference image
         resized_frame = cv2.resize(frame, (self.frame3d_width, self.frame3d_height))
 
-        # every 24 frames, perform object detection and re-initialize the trackers
-        if frame_count % 24 == 0:
-            boxes = self.detector_mod.detect_objects(resized_frame)
-            self.tracker.initialize(resized_frame, boxes)
-
-        # for subsequent tracking, invoke the .track_object() method
-        tracked_boxes = self.tracker.update(resized_frame)
+        tracked_boxes = self.detect_frame_at_interval(24, resized_frame, frame_count)
 
         # Processing each tracked box
         for (p1, p2) in tracked_boxes:
