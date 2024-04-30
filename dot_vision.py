@@ -79,8 +79,8 @@ ensemble_model = AutoMapper(
 )
 
 if __name__ == '__main__':
-    if (display == 'web'):
+    if display == 'web':
         app.run(host='0.0.0.0', port=3001)
 
-    if (display == 'cv2'):
+    if display == 'cv2':
         ensemble_model(imshow=True, save_output=True)
