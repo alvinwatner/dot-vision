@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 from auxiliary.model_interpreter import ModelInterpreter
 from auxiliary.tracker import Tracker
-from auxiliary.utils import calculate_framerate, tuples_to_nparray
+from auxiliary.utils import tuples_to_nparray
 
 
 class AutoMapper:
@@ -31,6 +31,12 @@ class AutoMapper:
         self.total_width = self.frame3d_width + self.frame2d_width
 
     def call_as_generator(self):
+        """
+        Display the result of ._process_frame() inside a generator method in order to generate
+        a stream of frames that can be shown through a browser using a lightweight web framework, such as Flask.
+
+        :return: frame stream separated with carriage return and new line
+        """
         frame_count = 0
         while True:
             combined_image, frame_count = self._process_frame(frame_count)
@@ -41,7 +47,23 @@ class AutoMapper:
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + buffer_frame + b'\r\n')
 
+    @staticmethod
+    def calculate_framerate(t1, t2):
+        frequency = cv2.getTickFrequency()
+        time = (t2 - t1) / frequency
+        framerate = 1 / time
+        return round(framerate)
+
     def detect_frame_at_interval(self, interval, frame, frame_count):
+        """
+        Detecting object and subsequently tracking them, object detection is performed
+        at every frame interval.
+
+        :param interval: frame interval to perform object detection
+        :param frame: opencv2 frame object
+        :param frame_count: current frame count of the video
+        :return: currently tracked boxes
+        """
         # every 24 frames, perform object detection and re-initialize the trackers
         if frame_count % interval == 0:
             boxes = self.detector_mod.detect_objects(frame)
@@ -52,7 +74,12 @@ class AutoMapper:
         return tracked_boxes
 
     def _process_frame(self, frame_count):
-        """Process video frames and return the combined image."""
+        """
+        Process video frames and return the combined image.
+
+        :param frame_count: frame interval to perform object detection
+        :return: combined image, frame count
+        """
         # Reset image2d to the original state at the start of each iteration
         image2d = self.image2d.copy()
 
@@ -90,7 +117,7 @@ class AutoMapper:
         t2 = cv2.getTickCount()
 
         # print framerate into frame
-        frame_rate = calculate_framerate(t1, t2)
+        frame_rate = self.calculate_framerate(t1, t2)
 
         # if framerate is lower than 24, display a red FPS text
         if frame_rate < 24:
@@ -113,6 +140,17 @@ class AutoMapper:
         frame_count += 1
 
         return combined_image, frame_count
+
+    # override this method to test the app
+    def final_method(self):
+        """
+        Final callback is designed to display whatever evaluation result it may have.
+        In the original implementation, it does not have any functionality, instead it is meant
+        to be overridden by its child classes.
+
+        :return: None
+        """
+        pass
 
     def __call__(self,
                  is_stream: bool = False,
@@ -157,5 +195,9 @@ class AutoMapper:
                 self.cap.release()
                 out.release()
                 cv2.destroyAllWindows()
+
+
         except Exception as e:
             print(f"Error in __call__: {e}")
+
+        self.final_method()
