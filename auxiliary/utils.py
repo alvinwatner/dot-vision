@@ -1,12 +1,6 @@
 import cv2
 import numpy as np
 
-def calculate_framerate(t1, t2):
-    frequency = cv2.getTickFrequency()
-    time = (t2 - t1) / frequency
-    framerate = 1 / time
-    return round(framerate)
-
 
 def tuples_to_nparray(tuple_list):
     # Convert each tuple in the list to a list
