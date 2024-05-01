@@ -162,7 +162,6 @@ class AutoMapper:
 
         :return: None
         """
-        raise NotImplementedError("This needs to be implemented")
         pass
 
     def __call__(self,
