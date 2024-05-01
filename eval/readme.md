@@ -23,7 +23,7 @@ Below is the leaderboard for the metric scores obtained from different model eva
 | -----------  |  -----------      |  ----------- | ----------- | ----------- | ----------- |
 | dot-vision-v1|  SSD MobileNet V1 |  cpu         | 0.32        | 10.8        | 4.1         |
 
-Contributors are encouraged to update this table with their results by submitting a pull request with the improved scores documented in their respective rows.
+The best scores in the leaderboard will be merged into main branch.
 
 # Note
 When running the script, ensure that all paths and dependencies are correctly set up according to your local environment. The script is designed to be modular, and different parameters can be tuned as per the requirements of the evaluation.
