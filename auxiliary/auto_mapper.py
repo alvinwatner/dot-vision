@@ -1,3 +1,4 @@
+import pickle
 import cv2
 import numpy as np
 import cv2
@@ -15,8 +16,8 @@ class AutoMapper:
                  image2Ddir,
                  image3Ddir,
                  cap,
-                 coors3d,
-                 coors2d,
+                 coors3Ddir,
+                 coors2Ddir,
                  ):
         self.detector_mod = ModelInterpreter(model_path=model_path, threshold=threshold, accelerator=accelerator,
                                              labels=labels)
@@ -24,11 +25,22 @@ class AutoMapper:
         self.image3d = cv2.imread(image3Ddir)
         self.cap = cap
         self.tracker = Tracker()
-        self.H, _ = cv2.findHomography(tuples_to_nparray(coors3d), tuples_to_nparray(coors2d))
+        coors2D, coors3D = self.loadCoordinates(coors2Ddir, coors3Ddir)       
+        self.H, _ = cv2.findHomography(tuples_to_nparray(coors3D), tuples_to_nparray(coors2D))
         self.frame3d_height, self.frame3d_width = self.image3d.shape[:2]
         self.frame2d_height, self.frame2d_width = self.image2d.shape[:2]
         self.max_height = max(self.frame3d_height, self.frame2d_height)
         self.total_width = self.frame3d_width + self.frame2d_width
+
+
+    @staticmethod
+    def loadCoordinates(coors2Ddir, coors3Ddir):
+        coor2d_file = open(coors2Ddir, 'rb')
+        coor3d_file = open(coors3Ddir, 'rb')  
+        coors2d = pickle.load(coor2d_file)
+        coors3d = pickle.load(coor3d_file)                       
+        return coors2d, coors3d
+
 
     def call_as_generator(self):
         """
@@ -150,6 +162,7 @@ class AutoMapper:
 
         :return: None
         """
+        raise NotImplementedError("This needs to be implemented")
         pass
 
     def __call__(self,
