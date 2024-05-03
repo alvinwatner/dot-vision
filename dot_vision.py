@@ -39,13 +39,6 @@ display = args.display
 coor2Ddir = args.coor2Ddir
 coor3Ddir = args.coor3Ddir
 
-coor2d_file = open(coor2Ddir, 'rb')
-coor3d_file = open(coor3Ddir, 'rb')
-
-# This coors2d and coors3d created from extract_coordinate.py tool.
-coors2d = pickle.load(coor2d_file)
-coors3d = pickle.load(coor3d_file)
-
 # set the model
 MODELDIR = Path(modeldir)
 if accelerator == "cpu":
@@ -73,14 +66,14 @@ ensemble_model = AutoMapper(
     labels=LABELS,
     image2Ddir=image2Ddir,
     image3Ddir=image3Ddir,
+    coors2Ddir=coor2Ddir,
+    coors3Ddir=coor3Ddir,
     cap=cap,
-    coors3d=coors3d,
-    coors2d=coors2d
 )
 
 if __name__ == '__main__':
-    if (display == 'web'):
+    if display == 'web':
         app.run(host='0.0.0.0', port=3001)
 
-    if (display == 'cv2'):
+    if display == 'cv2':
         ensemble_model(imshow=True, save_output=True)
