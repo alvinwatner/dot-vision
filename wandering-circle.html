@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wandering Circle</title>
+    <style>
+        body, html { margin: 0; height: 100%; overflow: hidden; background: black; }
+        canvas { display: block; background: black; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const circle = {
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: 30,
+            dx: (Math.random() - 0.5) * 4,
+            dy: (Math.random() - 0.5) * 4
+        };
+
+        function drawCircle() {
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.arc(circle.x, circle.y, circle.size, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+        }
+
+        function update() {
+            drawCircle();
+            circle.x += circle.dx;
+            circle.y += circle.dy;
+
+            if (circle.x + circle.size > canvas.width || circle.x - circle.size < 0) {
+                circle.dx *= -1;
+            }
+            if (circle.y + circle.size > canvas.height || circle.y - circle.size < 0) {
+                circle.dy *= -1;
+            }
+            requestAnimationFrame(update);
+        }
+
+        update();
+    </script>
+</body>
+</html>
