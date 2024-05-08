@@ -6,10 +6,11 @@ app = Flask(__name__)
 """
 steps:
 1. image height (h) and width (w)
-2. screen height (y) and width (x)
-3. divide y and h to get scale (p)
-4. divide x and w to get scale (q)
-5. use p and q to calculate dot on the client side
+2. screen height (h') and width (w')
+3. divide (h') and (h) to get scale (p)
+4. divide (w') and (w) to get scale (q)
+5. use (p) and (q) to calculate (x) and (y) on the client side
+6. where (x) = (p \cdot w) and (y) = (q \cdot h)
 """
 
 @app.route("/data")
