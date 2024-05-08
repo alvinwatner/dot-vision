@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dot Vision (Dark)</title>
+    <style>
+        .circle{
+            width: 50px;
+            height: 50px;
+            background-color: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 50px;
+            bottom: 50px;
+        }
+    </style>
+</head>
+<body style="background-color: black">
+<!-- overflow hidden to clip the sidebar, only required for tests using random numbers-->
+<div style="overflow: hidden">
+    <div id="circle" class="circle"></div>
+</div>
+<script>
+    function updateCircle(){
+        const circle = document.getElementById("circle")
+        fetch("{{ url_for ("get_position") }}")
+            .then(response => response.json())
+            .then(data => {
+                circle.style.top = data.position.y + "px";
+                circle.style.left = data.position.x + "px";
+            })
+    }
+    setInterval(updateCircle, 300);
+</script>
+</body>
+</html>
