@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, render_template
 import random
+from dot_vision import ensemble_model
 
 app = Flask(__name__)
 
@@ -13,13 +14,14 @@ steps:
 6. where (x) = (p \cdot w) and (y) = (q \cdot h)
 """
 
+
 @app.route("/data")
 def get_position():
+    x, y = ensemble_model(dark_vision=True)
+
     position = {
-        "x": random.randint(0, 1000),
-        "y": random.randint(0, 1000),
-        "initial_width": random.randint(0, 1000),
-        "initial_height": random.randint(0, 1000),
+        "x": x,
+        "y": y,
     }
     return jsonify(position=position)
 
@@ -30,4 +32,4 @@ def home():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=3001)

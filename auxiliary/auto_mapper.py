@@ -18,6 +18,7 @@ class AutoMapper:
                  cap,
                  coors3Ddir,
                  coors2Ddir,
+                 dark_vision=True
                  ):
         self.detector_mod = ModelInterpreter(model_path=model_path, threshold=threshold, accelerator=accelerator,
                                              labels=labels)
@@ -25,22 +26,23 @@ class AutoMapper:
         self.image3d = cv2.imread(image3Ddir)
         self.cap = cap
         self.tracker = Tracker()
-        coors2D, coors3D = self.loadCoordinates(coors2Ddir, coors3Ddir)       
+        coors2D, coors3D = self.loadCoordinates(coors2Ddir, coors3Ddir)
         self.H, _ = cv2.findHomography(tuples_to_nparray(coors3D), tuples_to_nparray(coors2D))
         self.frame3d_height, self.frame3d_width = self.image3d.shape[:2]
         self.frame2d_height, self.frame2d_width = self.image2d.shape[:2]
         self.max_height = max(self.frame3d_height, self.frame2d_height)
         self.total_width = self.frame3d_width + self.frame2d_width
 
+        # enable dark vision (dot_vision v2)
+        self.dark_vision = dark_vision
 
     @staticmethod
     def loadCoordinates(coors2Ddir, coors3Ddir):
         coor2d_file = open(coors2Ddir, 'rb')
-        coor3d_file = open(coors3Ddir, 'rb')  
+        coor3d_file = open(coors3Ddir, 'rb')
         coors2d = pickle.load(coor2d_file)
-        coors3d = pickle.load(coor3d_file)                       
+        coors3d = pickle.load(coor3d_file)
         return coors2d, coors3d
-
 
     def call_as_generator(self):
         """
@@ -85,6 +87,20 @@ class AutoMapper:
         tracked_boxes = self.tracker.update(frame)
         return tracked_boxes
 
+    def process_dark_vision(self, tracked_boxes):
+        """
+        Process video frame by only giving the coordinates of the bottom circle without invoking cv2 display methods
+
+        :param tracked_boxes: tracked boxes containing all the detected objects
+        :return: yielding x and y coordinates of transformed point
+        """
+        for (p1, p2) in tracked_boxes:
+            bottom_center = ((p1[0] + p2[0]) // 2, p2[1])
+            source_coor = np.array([[bottom_center]], dtype="float32")
+            transformed_coor = cv2.perspectiveTransform(source_coor, self.H)
+            transformed_coor = np.squeeze(transformed_coor)
+            yield int(transformed_coor[0]), int(transformed_coor[1])
+
     def _process_frame(self, frame_count):
         """
         Process video frames and return the combined image.
@@ -108,6 +124,9 @@ class AutoMapper:
         resized_frame = cv2.resize(frame, (self.frame3d_width, self.frame3d_height))
 
         tracked_boxes = self.detect_frame_at_interval(24, resized_frame, frame_count)
+
+        if self.dark_vision:
+            return self.process_dark_vision(tracked_boxes)
 
         # Processing each tracked box
         for (p1, p2) in tracked_boxes:
@@ -168,9 +187,13 @@ class AutoMapper:
                  is_stream: bool = False,
                  imshow: bool = False,
                  save_output: bool = True,
+                 dark_vision: bool = False,
                  ):
 
         try:
+            if dark_vision:
+                self.dark_vision = True
+
             if is_stream:
                 return self.call_as_generator()
 
@@ -189,15 +212,16 @@ class AutoMapper:
             frame_count = 0
 
             # loop through all frames in video
+            # TODO: fix this 
             while True:
-                combined_image, frame_count = self._process_frame(frame_count)
+                if dark_vision:
+                    return self._process_frame(frame_count)
 
+                combined_image, frame_count = self._process_frame(frame_count)
                 if combined_image is None:
                     break
-
                 if save_output:
                     out.write(combined_image)
-
                 if imshow:
                     cv2.imshow(window_name, combined_image)
                     if cv2.waitKey(1) & 0xFF == ord("q") or cv2.waitKey(1) & 0xFF == 27:  # if user enter q or ESC key
