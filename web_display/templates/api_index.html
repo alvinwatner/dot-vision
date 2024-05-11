@@ -23,7 +23,7 @@
 <script>
     function updateCircle(){
         const circle = document.getElementById("circle")
-        fetch("{{ url_for ("get_position") }}")
+        fetch("{{ url_for ('get_position') }}")
             .then(response => response.json())
             .then(data => {
                 circle.style.top = data.position.y + "px";

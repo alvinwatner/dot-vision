@@ -25,7 +25,7 @@ parser.add_argument("--live", help="Enable live tracking", action="store_true")
 parser.add_argument("--modeldir", help="Directory containing the detect.tflite and labelmap.txt", default="models/")
 parser.add_argument("--threshold", help="Set the threshold for object tracking accuracy", default=0.6)
 parser.add_argument("--accelerator", help="Set the accelerator used in object detection", choices=["cpu", "tpu"],
-                    default="tpu")
+                    default="cpu")
 args = parser.parse_args()
 is_live = args.live
 video_source = args.vidsource
@@ -73,7 +73,7 @@ ensemble_model = AutoMapper(
 
 if __name__ == '__main__':
     if display == 'web':
-        app.run(host='0.0.0.0', port=3001)
+        app.run(host='0.0.0.0', port=3000)
 
     if display == 'cv2':
-        ensemble_model(imshow=True, save_output=True)
+        ensemble_model(is_stream_using_cv2=True, save_output=True)
