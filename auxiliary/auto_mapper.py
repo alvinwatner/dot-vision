@@ -68,11 +68,11 @@ class AutoMapper:
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + buffer_frame + b'\r\n')
 
-    def stream_raw_outputs(self):
+    def generate_raw_outputs(self):
         """
         Stream raw homographic transformation outputs for consumption by other services or applications.
 
-        Yields:
+        Returns:
             list: List of transformed points per frame, representing the output of homographic transformations.
         """
         frame_count = 0
