@@ -1,24 +1,26 @@
 import pickle
 import cv2
 import numpy as np
-import cv2
 from auxiliary.model_interpreter import ModelInterpreter
 from auxiliary.tracker import Tracker
 from auxiliary.utils import tuples_to_nparray
 
-
 class AutoMapper:
-    def __init__(self,
-                 model_path,
-                 threshold,
-                 accelerator,
-                 labels,
-                 image2Ddir,
-                 image3Ddir,
-                 cap,
-                 coors3Ddir,
-                 coors2Ddir,
-                 ):
+    def __init__(self, model_path, threshold, accelerator, labels, image2Ddir, image3Ddir, cap, coors3Ddir, coors2Ddir):
+        """
+        Initialize AutoMapper with the necessary parameters and objects for processing.
+
+        Args:
+            model_path (str): Path to the trained model.
+            threshold (float): Detection threshold.
+            accelerator (str): Hardware acceleration option.
+            labels (list): List of class labels.
+            image2Ddir (str): Path to the directory containing 2D reference images.
+            image3Ddir (str): Path to the directory containing 3D images.
+            cap (cv2.VideoCapture): Video capture object.
+            coors3Ddir (str): Path to the file containing 3D coordinates.
+            coors2Ddir (str): Path to the file containing 2D coordinates.
+        """
         self.detector_mod = ModelInterpreter(model_path=model_path, threshold=threshold, accelerator=accelerator,
                                              labels=labels)
         self.image2d = cv2.imread(image2Ddir)
@@ -32,71 +34,93 @@ class AutoMapper:
         self.max_height = max(self.frame3d_height, self.frame2d_height)
         self.total_width = self.frame3d_width + self.frame2d_width
 
-
     @staticmethod
     def loadCoordinates(coors2Ddir, coors3Ddir):
-        coor2d_file = open(coors2Ddir, 'rb')
-        coor3d_file = open(coors3Ddir, 'rb')  
-        coors2d = pickle.load(coor2d_file)
-        coors3d = pickle.load(coor3d_file)                       
-        return coors2d, coors3d
+        """
+        Load coordinate data from the specified directory.
 
+        Args:
+            coors2Ddir (str): Directory containing the 2D coordinates.
+            coors3Ddir (str): Directory containing the 3D coordinates.
+
+        Returns:
+            tuple: A tuple containing the 2D and 3D coordinates loaded from the files.
+        """
+        with open(coors2Ddir, 'rb') as coor2d_file, open(coors3Ddir, 'rb') as coor3d_file:
+            coors2d = pickle.load(coor2d_file)
+            coors3d = pickle.load(coor3d_file)
+        return coors2d, coors3d
 
     def stream_as_image(self):
         """
-        Display the result of ._process_frame() inside a generator method in order to generate
-        a stream of frames that can be shown through a browser using a lightweight web framework, such as Flask.
+        Stream processed frames as images for display in a web browser using a generator.
 
-        :return: frame stream separated with carriage return and new line
+        Yields:
+            bytes: JPEG image data for each frame processed, formatted for HTTP streaming.
         """
         frame_count = 0
         while True:
-            image, frame_count, _ = self._process_frame(frame_count, is_draw= True)
+            image, frame_count, _ = self._process_frame(frame_count, is_draw=True)
             ret, buffer = cv2.imencode('.jpg', image)
             if not ret:
                 break
             buffer_frame = buffer.tobytes()
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + buffer_frame + b'\r\n')
-            
+
     def stream_raw_outputs(self):
         """
-        Display the result of ._process_frame() inside a generator method in order to generate
-        a stream of frames that can be shown through a browser using a lightweight web framework, such as Flask.
+        Stream raw homographic transformation outputs for consumption by other services or applications.
 
-        :return: frame stream separated with carriage return and new line
+        Yields:
+            list: List of transformed points per frame, representing the output of homographic transformations.
         """
         frame_count = 0
         while True:
-            _, frame_count, transformed_points = self._process_frame(frame_count)    
-            yield transformed_points
+            _, frame_count, transformed_points = self._process_frame(frame_count, is_draw=False)    
+            return transformed_points
 
     @staticmethod
     def calculate_framerate(t1, t2):
+        """
+        Calculate the framerate based on the tick counts at the start and end of frame processing.
+
+        Args:
+            t1 (int): Tick count at the start of processing.
+            t2 (int): Tick count at the end of processing.
+
+        Returns:
+            int: The calculated frame rate.
+        """
         frequency = cv2.getTickFrequency()
         time = (t2 - t1) / frequency
-        framerate = 1 / time
-        return round(framerate)
-    
+        return round(1 / time)
+
     def transform_coordinates(self, coordinates):
         """
-        Perform homographic transformation on a single coordinate.
+        Apply a homographic transformation to the given coordinates.
 
-        :param coordinates: Tuple of coordinates (x, y).
-        :return: Transformed coordinates as a numpy array.
+        Args:
+            coordinates (tuple): A tuple (x, y) representing the coordinates to transform.
+
+        Returns:
+            numpy.ndarray: Transformed coordinates as a numpy array.
         """
         source_coor = np.array([[coordinates]], dtype='float32')
-        return cv2.perspectiveTransform(source_coor, self.H)    
+        return cv2.perspectiveTransform(source_coor, self.H)
     
-    def calculate_bottom_center(p1, p2):
+    def calculate_bottom_center(self, p1, p2):
         """
-        Calculate the bottom center point of a bounding box.
+        Calculate the bottom center point between two points defining a bounding box.
 
-        :param p1: Tuple (x1, y1), top-left corner of the bounding box.
-        :param p2: Tuple (x2, y2), bottom-right corner of the bounding box.
-        :return: Tuple representing the bottom center point of the bounding box.
+        Args:
+            p1 (tuple): Top-left corner of the bounding box.
+            p2 (tuple): Bottom-right corner of the bounding box.
+
+        Returns:
+            tuple: Coordinates of the bottom center point.
         """
-        return (p1[0] + p2[0]) // 2, p2[1]    
+        return (p1[0] + p2[0]) // 2, p2[1]
 
     def detect_and_track_objects(self, frame, frame_count):
         """
@@ -117,6 +141,20 @@ class AutoMapper:
         return self.tracker.update(frame)
     
     def draw_frame_rate(self, t1, frame3d):
+        """
+        Draw the framerate on the frame based on the processing time.
+
+        This function calculates the framerate by measuring the time elapsed between two ticks
+        and displays it on the provided frame. A different color is used depending on the framerate's
+        relation to a threshold (24 fps in this case).
+
+        Args:
+            t1 (int): Tick count at the start of frame processing.
+            frame3d (numpy.ndarray): The frame on which the framerate will be drawn.
+
+        Returns:
+            None: The frame is modified in place.
+        """        
         # get t2 for framerate calculation
         t2 = cv2.getTickCount()
 
@@ -134,6 +172,24 @@ class AutoMapper:
 
 
     def draw_detection_and_mapping(self, frame3d, frame2d, p1, p2, bottom_center, transformed_point):
+        """
+        Draw detections and mappings on the provided frames.
+
+        This function handles the drawing of bounding boxes and bottom center points on one frame,
+        and the corresponding transformed points on another frame. It is used primarily during the
+        visualization to illustrate the tracking and transformation results.
+
+        Args:
+            frame3d (numpy.ndarray): The frame where detections will be drawn.
+            frame2d (numpy.ndarray): The frame where transformed points will be drawn.
+            p1 (tuple): Top-left corner of the bounding box.
+            p2 (tuple): Bottom-right corner of the bounding box.
+            bottom_center (tuple): Bottom center point of the bounding box.
+            transformed_point (numpy.ndarray): Transformed coordinates to be drawn on frame2d.
+
+        Returns:
+            None: Both frames are modified in place.
+        """        
         # Draw bounding box
         cv2.rectangle(frame3d, p1, p2, (255, 0, 0), 2)
         # Draw bottom center

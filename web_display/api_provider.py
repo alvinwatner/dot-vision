@@ -16,7 +16,8 @@ steps:
 
 @app.route("/data")
 def get_position():
-    ensemble_model(is_stream = True)
+    transformed_points = ensemble_model()
+    print(f"transformed_points = {transformed_points}")
     position = {
         "x": random.randint(0, 1000),
         "y": random.randint(0, 1000),
