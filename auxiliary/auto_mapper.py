@@ -70,7 +70,7 @@ class AutoMapper:
 
     def generate_raw_outputs(self):
         """
-        Stream raw homographic transformation outputs for consumption by other services or applications.
+        Generate raw homographic transformation outputs for consumption by other services or applications.
 
         Returns:
             list: List of transformed points per frame, representing the output of homographic transformations.
