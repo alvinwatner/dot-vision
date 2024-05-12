@@ -306,7 +306,7 @@ class AutoMapper:
 
         try:
             if (not is_stream_as_image and not is_stream_using_cv2):
-                return self.stream_raw_outputs()
+                return self.generate_raw_outputs()
 
             if is_stream_as_image:
                 return self.stream_as_image()
