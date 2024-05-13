@@ -4,31 +4,58 @@
     <meta charset="UTF-8">
     <title>Dot Vision (Dark)</title>
     <style>
-        .circle{
+        .circle {
             width: 50px;
             height: 50px;
-            background-color: white;
+            background-color: black;
             border-radius: 50%;
             position: absolute;
-            top: 50px;
-            bottom: 50px;
+        }
+
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        body {
+            background-image: url('../static/2d_image.png'); /* Ensure this path is correct */
+            background-size: 100% 100%;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            margin: 0;
+            overflow: hidden;
+            height: 100vh;
         }
     </style>
 </head>
-<body style="background-color: black">
-<!-- overflow hidden to clip the sidebar, only required for tests using random numbers-->
-<div style="overflow: hidden">
-    <div id="circle" class="circle"></div>
-</div>
+<body>
+<div id="container"></div>
 <script>
-    function updateCircle(){
-        const circle = document.getElementById("circle")
-        fetch("{{ url_for ("get_position") }}")
+    function updateCircle() {
+        const container = document.getElementById("container");
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        
+        fetch(`/data?width=${width}&height=${height}`)
             .then(response => response.json())
             .then(data => {
-                circle.style.top = data.position.y + "px";
-                circle.style.left = data.position.x + "px";
-            })
+                console.log(data.position.points);
+                // Remove all existing circles before adding new ones
+                while (container.firstChild) {
+                    container.removeChild(container.firstChild);
+                }
+                
+                // Create a new circle for each coordinate
+                data.position.points.forEach(coord => {
+                    const circle = document.createElement('div');
+                    circle.classList.add('circle');
+                    circle.style.left = coord[0] + 'px';
+                    circle.style.top = coord[1] + 'px';
+                    container.appendChild(circle);
+                });
+            });
     }
     setInterval(updateCircle, 300);
 </script>
