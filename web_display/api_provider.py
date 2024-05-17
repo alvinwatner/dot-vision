@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, render_template
+from dot_vision import ensemble_model
 import random
 from dot_vision import ensemble_model
 
@@ -17,8 +18,8 @@ steps:
 
 @app.route("/data")
 def get_position():
-    x, y = ensemble_model(dark_vision=True)
-
+    transformed_points = ensemble_model()
+    print(f"transformed_points = {transformed_points}")
     position = {
         "x": x,
         "y": y,
