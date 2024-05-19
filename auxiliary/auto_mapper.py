@@ -221,7 +221,9 @@ class AutoMapper:
         transformed_points = []
         if is_draw:
             for p1, p2 in boxes:
+                
                 bottom_center = self.calculate_bottom_center(p1, p2)
+                print(f"OBJECT DETECTED ON {bottom_center}")
                 transformed_point = self.transform_coordinates(bottom_center)
                 transformed_points.append(transformed_point)
                 self.draw_detection_and_mapping(frame3d, frame2d, p1, p2, bottom_center, transformed_point)
