@@ -5,6 +5,7 @@ from auxiliary.model_interpreter import ModelInterpreter
 from auxiliary.tracker import Tracker
 from auxiliary.utils import tuples_to_nparray
 
+
 class AutoMapper:
     def __init__(self, model_path, threshold, accelerator, labels, image2Ddir, image3Ddir, cap, coors3Ddir, coors2Ddir):
         """
@@ -33,6 +34,8 @@ class AutoMapper:
         self.frame2d_height, self.frame2d_width = self.image2d.shape[:2]
         self.max_height = max(self.frame3d_height, self.frame2d_height)
         self.total_width = self.frame3d_width + self.frame2d_width
+        self.framerate_samples = []
+        self.framerate_sample_size = 24
 
     @staticmethod
     def loadCoordinates(coors2Ddir, coors3Ddir):
@@ -77,13 +80,12 @@ class AutoMapper:
         """
         frame_count = 0
         while True:
-            _, frame_count, transformed_points = self._process_frame(frame_count, is_draw=False)    
+            _, frame_count, transformed_points = self._process_frame(frame_count, is_draw=False)
             return transformed_points
 
-    @staticmethod
-    def calculate_framerate(t1, t2):
+    def calculate_framerate(self, t1, t2):
         """
-        Calculate the framerate based on the tick counts at the start and end of frame processing.
+        Calculate the framerate based on the tick counts at the start and end of frame processing. Added averaging in framerate counting to make the result more reliable
 
         Args:
             t1 (int): Tick count at the start of processing.
@@ -94,7 +96,14 @@ class AutoMapper:
         """
         frequency = cv2.getTickFrequency()
         time = (t2 - t1) / frequency
-        return round(1 / time)
+        if time > 0:
+            current_frame_rate = 1 / time
+            self.framerate_samples.append(current_frame_rate)
+            if len(self.framerate_samples) > self.framerate_sample_size:
+                self.framerate_samples.pop(0)
+            average_framerate = sum(self.framerate_samples) / len(self.framerate_samples)
+            return round(average_framerate)
+        return 0
 
     def transform_coordinates(self, coordinates):
         """
@@ -108,7 +117,7 @@ class AutoMapper:
         """
         source_coor = np.array([[coordinates]], dtype='float32')
         return cv2.perspectiveTransform(source_coor, self.H)
-    
+
     def calculate_bottom_center(self, p1, p2):
         """
         Calculate the bottom center point between two points defining a bounding box.
@@ -139,7 +148,7 @@ class AutoMapper:
 
         # for subsequent tracking, invoke the .track_object() method
         return self.tracker.update(frame)
-    
+
     def draw_frame_rate(self, t1, frame3d):
         """
         Draw the framerate on the frame based on the processing time.
@@ -154,12 +163,12 @@ class AutoMapper:
 
         Returns:
             None: The frame is modified in place.
-        """        
+        """
         # get t2 for framerate calculation
         t2 = cv2.getTickCount()
 
         # print framerate into frame
-        frame_rate = self.calculate_framerate(t1, t2)                
+        frame_rate = self.calculate_framerate(t1, t2)
 
         # if framerate is lower than 24, display a red FPS text
         if frame_rate < 24:
@@ -168,8 +177,7 @@ class AutoMapper:
             color = (255, 255, 0)
 
         cv2.putText(frame3d, f"FPS: {frame_rate}", (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2,
-                    cv2.LINE_AA)        
-
+                    cv2.LINE_AA)
 
     def draw_detection_and_mapping(self, frame3d, frame2d, p1, p2, bottom_center, transformed_point):
         """
@@ -189,16 +197,15 @@ class AutoMapper:
 
         Returns:
             None: Both frames are modified in place.
-        """        
+        """
         # Draw bounding box
         cv2.rectangle(frame3d, p1, p2, (255, 0, 0), 2)
         # Draw bottom center
         cv2.circle(frame3d, bottom_center, 4, (255, 255, 0), -1)
         trans_pt = transformed_point[0][0]  # Simplify the access to coordinates
         # Draw homographic mapping result
-        cv2.circle(frame2d, (int(trans_pt[0]), int(trans_pt[1])), 5, (0, 255, 0), -2)        
-        
-    
+        cv2.circle(frame2d, (int(trans_pt[0]), int(trans_pt[1])), 5, (0, 255, 0), -2)
+
     def transform_and_draw(self, frame2d, frame3d, boxes, is_draw):
         """
         Perform homographic transformations on detected boxes and optionally draw on the frame.
@@ -231,8 +238,7 @@ class AutoMapper:
         else:
             # If not drawing, just perform transformations
             transformed_points = [self.transform_coordinates(self.calculate_bottom_center(p1, p2)) for p1, p2 in boxes]
-            return transformed_points, None        
-
+            return transformed_points, None
 
     def _process_frame(self, frame_count, is_draw):
         """
@@ -259,35 +265,36 @@ class AutoMapper:
         frame_count += 1
 
         return image, frame_count, transformed_points
-    
+
     def stream_using_cv2(self, save_output: bool = False):
         window_name = "Dot Vision"
         cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
-        cv2.resizeWindow(window_name, self.total_width, self.max_height)        
+        cv2.resizeWindow(window_name, self.total_width, self.max_height)
         # to perform object detection every X frame
-        frame_count = 0    
+        frame_count = 0
         # loop through all frames in video
 
         if save_output:
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             output_file = "output_tracker.mp4"
             fps = 24
-            out = cv2.VideoWriter(output_file, fourcc, fps, (self.total_width, self.max_height))        
+            out = cv2.VideoWriter(output_file, fourcc, fps, (self.total_width, self.max_height))
 
         while True:
-            image, frame_count, _ = self._process_frame(frame_count, is_draw=True)            
+            image, frame_count, _ = self._process_frame(frame_count, is_draw=True)
             if image is None:
-                break       
+                break
             if save_output:
-                out.write(image)    
+                out.write(image)
             cv2.imshow(window_name, image)
             if cv2.waitKey(1) & 0xFF == ord("q") or cv2.waitKey(1) & 0xFF == 27:  # if user enter q or ESC key
-                break  
+                break
         self.cap.release()
         out.release()
-        cv2.destroyAllWindows()                                       
+        cv2.destroyAllWindows()
 
-    # override this method to test the app
+        # override this method to test the app
+
     def final_method(self):
         """
         Final callback is designed to display whatever evaluation result it may have.
@@ -313,7 +320,7 @@ class AutoMapper:
 
             if is_stream_using_cv2:
                 self.stream_using_cv2(save_output)
-            
+
         except Exception as e:
             print(f"Error in __call__: {e}")
 
