@@ -1,10 +1,10 @@
 import cv2
 
 # Path to the video file
-video_path = 'samples/input_video.mp4'
+video_path = '/home/kaorikizuna/Dot Vision/dot-vision/samples/nick_room-6.mkv'
 
 # Timestamp in seconds (e.g., 120 seconds)
-timestamp = 6
+timestamp = 7
 
 # Open the video file
 cap = cv2.VideoCapture(video_path)
