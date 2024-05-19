@@ -18,12 +18,14 @@ tracker: lightweight object tracker
 
 # check whether to take a video from source or from live feed.
 parser = argparse.ArgumentParser()
-parser.add_argument("--display", help="Display output target", choices=["cv2", "web"], default="web")
-parser.add_argument("--vidsource", help="Video source for tracking", default='samples/input_video.mp4')
-parser.add_argument("--layout2Ddir", help="2D layout image", default='coordinates/2d_image.png')
-parser.add_argument("--layout3Ddir", help="3D layout image", default='coordinates/3d_image.png')
-parser.add_argument("--coor2Ddir", help="2D coordinates data", default='coordinates/2d_coordinates.pkl')
-parser.add_argument("--coor3Ddir", help="3D coordinates data", default='coordinates/3d_coordinates.pkl')
+parser.add_argument("--display", help="Display output target", choices=["cv2", "web"], default="cv2")
+parser.add_argument("--vidsource", help="Video source for tracking", default='samples/nick_room-6.mkv')
+parser.add_argument("--layout2Ddir", help="2D layout image", default='coordinates/nick/image_2D.png')
+parser.add_argument("--layout3Ddir", help="3D layout image", default='coordinates/nick/image_2D.png')
+parser.add_argument("--coor2Ddir", help="2D coordinates data",
+                    default='coordinates/nick/coordinates_2D.pkl')
+parser.add_argument("--coor3Ddir", help="3D coordinates data",
+                    default='coordinates/nick/coordinates_2D.pkl')
 parser.add_argument("--live", help="Enable live tracking", action="store_true")
 parser.add_argument("--modeldir", help="Directory containing the detect.tflite and labelmap.txt", default="models/")
 parser.add_argument("--threshold", help="Set the threshold for object tracking accuracy", default=0.6)
@@ -84,18 +86,23 @@ def run_ensemble_model():
     ensemble_model(is_stream_using_cv2=True)
 
 
+def debug_tracking_with_cv2():
+    process_web = threading.Thread(target=run_flask_app)
+    process_cv2 = threading.Thread(target=run_ensemble_model)
+    process_web.start()
+    process_cv2.start()
+    process_web.join()
+    process_cv2.join()
+
+
+debug = False
+
 if __name__ == '__main__':
     if display == 'web':
-        # uncomment this after testing
-        # run_flask_app()
-        process_web = threading.Thread(target=run_flask_app)
-        process_cv2 = threading.Thread(target=run_ensemble_model)
-        process_web.start()
-        process_cv2.start()
-        process_web.join()
-        process_cv2.join()
-
-        # create_threads(run_flask_app, ensemble_model(is_stream_using_cv2=True))
+        if debug:
+            debug_tracking_with_cv2()
+        else:
+            run_flask_app()
 
     if display == 'cv2':
         ensemble_model(is_stream_using_cv2=True, save_output=True)
