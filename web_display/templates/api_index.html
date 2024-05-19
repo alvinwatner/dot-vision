@@ -43,6 +43,7 @@
 <input type="range" id="opacity-slider" min="0" max="1" step="0.01" value="1">
 <script>
     function updateCircle() {
+        
         const width = window.innerWidth;
         const height = window.innerHeight;
         
@@ -91,7 +92,7 @@
         } 
     });
 
-    updateCircle
+    setInterval(updateCircle, 300);
 
 </script>
 </body>
