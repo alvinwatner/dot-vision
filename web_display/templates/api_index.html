@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dot Vision (Dark)</title>
+    <style>
+        .circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            position: absolute;
+        }
+
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('../static/2d_image.png'); /* Ensure this path is correct */
+            background-size: 100% 100%;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            height: 100vh;
+            background-color: black; /* Default background color */
+        }
+
+        #opacity-slider {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+<div id="container"></div>
+<!-- Slider for controlling the background image opacity -->
+<input type="range" id="opacity-slider" min="0" max="1" step="0.01" value="1">
+<script>
+    function updateCircle() {
+        
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        
+        fetch(`/data?width=${width}&height=${height}`)
+            .then(response => response.json())
+            .then(data => {
+                // Remove all existing circles from the body, not the container
+                document.querySelectorAll('.circle').forEach(circle => {
+                    circle.remove();
+                });
+                // Create a new circle for each coordinate and append to the body
+                data.position.points.forEach(coord => {
+                    const circle = document.createElement('div');
+                    circle.classList.add('circle');
+                    circle.style.left = coord[0] + 'px';
+                    circle.style.top = coord[1] + 'px';
+                    document.body.appendChild(circle); // Adding to the body instead of the container
+                });
+                // Update circle colors based on current slider value
+                updateCircleColors(document.getElementById('opacity-slider').value);
+            });
+    }
+
+    function updateCircleColors(opacityValue) {
+        const circles = document.querySelectorAll('.circle');
+        const colorValue = 255 * (1 - opacityValue); // Calculate the RGB value
+        circles.forEach(circle => {
+            circle.style.backgroundColor = `rgb(${colorValue}, ${colorValue}, ${colorValue})`;
+        });
+    }
+
+    // Handle opacity changes and dynamic color adjustment
+    document.getElementById('opacity-slider').addEventListener('input', function() {
+        const opacityValue = parseFloat(this.value);
+        const container = document.getElementById('container');
+
+        // Adjust the opacity of the background image
+        container.style.opacity = opacityValue;
+
+        // Update circle colors based on slider
+        updateCircleColors(opacityValue);
+
+        // Change body background color when opacity is zero
+        if (opacityValue === 0) {
+            document.body.style.backgroundColor = 'black';
+        } 
+    });
+
+    setInterval(updateCircle, 300);
+
+</script>
+</body>
+</html>
