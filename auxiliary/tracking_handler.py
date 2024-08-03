@@ -33,6 +33,8 @@ class TrackingHandler:
         :return: None
         """
         # the algorithm used for individual tracker
+        self.frame_height = None
+        self.frame_width = None
         self.tracker = cv2.TrackerMIL
 
         self.boxes = []
