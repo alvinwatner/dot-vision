@@ -1,7 +1,28 @@
 import cv2
+from dataclasses import dataclass
+from typing import List
+import logging
+from auxiliary.frame_dataclass import Frame
+
+logging.basicConfig(level=logging.DEBUG)
 
 
+@dataclass
 class Tracker:
+    tracker: cv2.TrackerMIL
+
+    # previously named p1, p2
+    top_left: (int, int) = (0, 0)
+    bottom_right: (int, int) = (0, 0)
+
+    # computed property
+    @property
+    def bottom_center(self) -> (int, int):
+        return (self.top_left[0] + self.bottom_right[0]) // 2, self.bottom_right[1]
+
+
+class TrackingHandler:
+    trackers: List[Tracker]
 
     def __init__(self):
         """
@@ -18,7 +39,6 @@ class Tracker:
 
         # container for all available trackers
         self.trackers = []
-        # self.initialize(frame, boxes)
 
     def convert_tf_boxes_to_opencv(self, boxes):
         """
@@ -41,13 +61,15 @@ class Tracker:
             cv_box = (xmin, ymin, width, height)
             self.boxes.append(cv_box)
 
-    def initialize(self, frame, boxes):
+    def initialize(self, frame, boxes: list):
         """
         initialize trackers for object tracking
 
         :param frame: opencv2 frame object
         :param boxes: tensorflow lite bounding boxes
         """
+
+        # TODO: encapsulate frame into an object
         self.frame_height, self.frame_width, _ = frame.shape
 
         self.convert_tf_boxes_to_opencv(boxes)
@@ -61,7 +83,7 @@ class Tracker:
                 tracker.init(frame, box)
             else:
                 continue
-            self.trackers.append(tracker)
+            self.trackers.append(Tracker(tracker))
 
     @staticmethod
     def _is_detection_valid(frame, box):
@@ -71,16 +93,18 @@ class Tracker:
 
         # bounding box is containing these values (x, y, width, height)
         if any(dim < 0 for dim in box):
-            print("Bounding box dimension is invalid")
+            logging.debug("Bounding box dimension is invalid")
             return False
         elif box[2] <= 0 or box[3] <= 0:
-            print(f"Bounding box height: {box[2]} or width: {box[3]} is invalid")
+            logging.debug(f"Bounding box height: {box[2]} or width: {box[3]} is invalid")
             return False
         elif box[0] + box[2] > frame.shape[1]:
-            print(f"Bounding box x: {box[0]} and height: {box[2]} is invalid, allowed value is no more than {frame.shape[1]}")
+            logging.debug(
+                f"Bounding box x: {box[0]} and height: {box[2]} is invalid, allowed value is no more than {frame.shape[1]}")
             return False
         elif box[1] + box[3] > frame.shape[0]:
-            print(f"Bounding box y: {box[1]} and width: {box[3]} is invalid, allowed value is no more than {frame.shape[0]}")
+            logging.debug(
+                f"Bounding box y: {box[1]} and width: {box[3]} is invalid, allowed value is no more than {frame.shape[0]}")
             return False
         return True
 
@@ -91,17 +115,24 @@ class Tracker:
         :param frame: opencv2 frame object
         :return: tuple containing the bounding box for the tracked object
         """
+
+        # TODO: get values from individual tracker
+        # TODO: will break because it doesn't return anything yet
         p1_p2 = []
 
         # if there is no tracker, return empty list
         if not len(self.trackers):
             return p1_p2
 
-        for index, tracker in enumerate(self.trackers):
-            ret, box = tracker.update(frame)
+        for index, obj in enumerate(self.trackers):
+            ret, box = obj.tracker.update(frame)
 
             # if tracking successful, add bounding box
             if ret:
+                self.trackers[index].top_left = (int(box[0]), int(box[1]))
+                self.trackers[index].bottom_right = (int(box[0] + box[2]), int(box[1] + box[3]))
+
+                # legacy reasons
                 p1 = (int(box[0]), int(box[1]))
                 p2 = (int(box[0] + box[2]), int(box[1] + box[3]))
                 p1_p2.append((p1, p2))
