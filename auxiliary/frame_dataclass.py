@@ -6,6 +6,11 @@ import numpy as np
 class Frame:
     # cv2 frame object
     frame: np.ndarray = np.array([])
-    width: int = 0
-    height: int = 0
     frame_count: int = 0
+
+    @property
+    def height(self):
+        return self.frame.shape[0]
+
+    def width(self):
+        return self.frame.shape[1]
