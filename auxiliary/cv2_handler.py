@@ -53,7 +53,6 @@ class CV2Handler:
         if not success:
             return False
         self.frame_dataclass.frame = frame
-        self.frame_dataclass.height, self.frame_dataclass.width = self.frame_dataclass.frame.shape[:2]
         self.frame_dataclass.frame_count += 1
         return True
 
