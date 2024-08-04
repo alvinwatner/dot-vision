@@ -32,14 +32,15 @@ class CV2Handler:
         self.frequency = cv2.getTickFrequency()
         self.frame_dataclass = Frame()
 
-        cv2.namedWindow(self.window_name, cv2.WINDOW_NORMAL)
-        cv2.resizeWindow(self.window_name, self.image_handler.total_width, self.image_handler.max_height)
-
         self.write_output_video()
 
     def calculate_framerate(self, t1, t2):
         time = (t2 - t1) / self.frequency
         return int(1 // time)
+
+    def _setup_cv2_window(self):
+        cv2.namedWindow(self.window_name, cv2.WINDOW_NORMAL)
+        cv2.resizeWindow(self.window_name, self.image_handler.total_width, self.image_handler.max_height)
 
     def write_output_video(self):
         if self.is_save:
@@ -91,8 +92,11 @@ class CV2Handler:
 
         frame_rate = self.calculate_framerate(self.t1, t2)
 
+        # if below 24 fps, use red color
         if frame_rate < 24:
             color = (0, 0, 255)
+
+        # else use light blue
         else:
             color = (255, 255, 0)
 
@@ -101,8 +105,9 @@ class CV2Handler:
 
     def process_frame(self, draw_as_image: bool = False):
         while self.read_capture():
-            # copy the image2d and image3d to not overlap with the previous result
             self.t1 = cv2.getTickCount()
+
+            # copy the image2d and image3d to not overlap with the previous result
             self.image2d_to_draw = self.image_handler.image2d.image.copy()
             self.image3d_to_draw = cv2.resize(self.frame_dataclass.frame,
                                               (self.image_handler.image3d.width, self.image_handler.image3d.height))
@@ -114,6 +119,9 @@ class CV2Handler:
                 self.draw_as_image()
             else:
                 self.draw_result()
+
+        # when done, perform cleanup
+        self._perform_cleanup()
 
     def draw_result(self):
         # create bounding box and homographic transformation
