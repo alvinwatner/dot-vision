@@ -59,7 +59,6 @@ class ModelInterpreter:
 
     def detect_objects(self, frame):
         self.frame = frame
-        self.frame_height, self.frame_width, _ = frame.shape
         self.preprocess_image()
         self.interpreter.set_tensor(self.input_index, self.frame)
         self.interpreter.invoke()
