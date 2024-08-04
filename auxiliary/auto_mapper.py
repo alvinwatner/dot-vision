@@ -2,7 +2,7 @@ import pickle
 import cv2
 import numpy as np
 from auxiliary.model_interpreter import ModelInterpreter
-from auxiliary.tracker import Tracker
+from auxiliary.tracking_handler import TrackingHandler
 from auxiliary.utils import tuples_to_nparray
 
 
@@ -27,7 +27,7 @@ class AutoMapper:
         self.image2d = cv2.imread(image2Ddir)
         self.image3d = cv2.imread(image3Ddir)
         self.cap = cap
-        self.tracker = Tracker()
+        self.tracker = TrackingHandler()
         coors2D, coors3D = self.loadCoordinates(coors2Ddir, coors3Ddir)
         self.H, _ = cv2.findHomography(tuples_to_nparray(coors3D), tuples_to_nparray(coors2D))
         self.frame3d_height, self.frame3d_width = self.image3d.shape[:2]
