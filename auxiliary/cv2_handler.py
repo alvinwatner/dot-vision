@@ -38,8 +38,8 @@ class CV2Handler:
         self.write_output_video()
 
     def calculate_framerate(self, t1, t2):
-        time = (t2 - t1) // self.frequency
-        return time
+        time = (t2 - t1) / self.frequency
+        return int(1 // time)
 
     def write_output_video(self):
         if self.is_save:
