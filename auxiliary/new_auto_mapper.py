@@ -37,4 +37,4 @@ class AutoMapper:
         self.cv2_handler.process_frame()
 
     def stream_as_image(self):
-        self.cv2_handler.process_frame(draw_as_image=True)
+        self.cv2_handler.process_frame(is_stream=True)
