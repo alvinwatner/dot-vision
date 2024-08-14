@@ -95,7 +95,7 @@ def test_draw_result(cv2_handler):
     cv2_handler.image2d_to_draw = np.zeros((720, 640, 3), dtype=np.uint8)
     cv2_handler.image3d_to_draw = np.zeros((720, 640, 3), dtype=np.uint8)
 
-    cv2_handler.draw_result()
+    cv2_handler.process_and_display_frame()
 
     combined_image = cv2_handler.combined_image
     assert combined_image.shape == (720, 1280, 3)
