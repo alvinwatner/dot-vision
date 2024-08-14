@@ -6,7 +6,7 @@ import cv2
 import pickle
 import cv2
 from auxiliary.auto_mapper import AutoMapper
-from web_display.display import app
+from web_display.backend import app
 import multiprocessing
 import threading
 
