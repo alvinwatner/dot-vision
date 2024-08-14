@@ -32,7 +32,8 @@ class CV2Handler:
         self.frequency = cv2.getTickFrequency()
         self.frame_dataclass = Frame()
 
-        self.write_output_video()
+        if self.is_save:
+            self.init_video_writer()
 
     def calculate_framerate(self, t1, t2):
         time = (t2 - t1) / self.frequency
@@ -42,12 +43,11 @@ class CV2Handler:
         cv2.namedWindow(self.window_name, cv2.WINDOW_NORMAL)
         cv2.resizeWindow(self.window_name, self.image_handler.total_width, self.image_handler.max_height)
 
-    def write_output_video(self):
-        if self.is_save:
-            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-            fps = 24
-            self.out = cv2.VideoWriter(self.output_file, fourcc, fps,
-                                       (self.image_handler.total_width, self.image_handler.max_height))
+    def init_video_writer(self):
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        fps = 24
+        self.out = cv2.VideoWriter(self.output_file, fourcc, fps,
+                                   (self.image_handler.total_width, self.image_handler.max_height))
 
     def read_capture(self):
         success, frame = self.cap.read()
@@ -103,7 +103,7 @@ class CV2Handler:
         # image, text, position (x, y), font, font scale, color, thickness
         cv2.putText(self.image3d_to_draw, f"FPS: {frame_rate}", (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
 
-    def process_frame(self, draw_as_image: bool = False):
+    def process_frame(self, is_stream: bool = False):
         while self.read_capture():
             self.t1 = cv2.getTickCount()
 
@@ -115,15 +115,15 @@ class CV2Handler:
             # detect and track objects
             self.model_interpreter.detect_and_track_objects(self.frame_dataclass)
 
-            if draw_as_image:
-                self.draw_as_image()
+            if is_stream:
+                self.encode_image_for_streaming()
             else:
-                self.draw_result()
+                self.process_and_display_frame()
 
         # when done, perform cleanup
         self._perform_cleanup()
 
-    def draw_result(self):
+    def process_and_display_frame(self):
         # create bounding box and homographic transformation
         self.create_bounding_box_homographic()
 
@@ -147,7 +147,7 @@ class CV2Handler:
         cv2.destroyAllWindows()
         exit()
 
-    def draw_as_image(self):
+    def encode_image_for_streaming(self):
         # extension, image
         ret, buffer = cv2.imencode(".jpg", self.combined_image)
         buffer_frame = buffer.tobytes()
