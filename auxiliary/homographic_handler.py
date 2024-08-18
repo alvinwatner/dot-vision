@@ -2,6 +2,7 @@ import cv2
 from auxiliary.utils import tuples_to_nparray
 import numpy as np
 import pickle
+from auxiliary.homographic_image_handler import ImageHandler
 
 
 class HomographicHandler:
@@ -9,7 +10,10 @@ class HomographicHandler:
     Handle homographic transform being performed
     """
 
-    def __init__(self, coors2Ddir, coors3Ddir):
+    def __init__(self, coors2Ddir, coors3Ddir, image_handler: ImageHandler):
+        # adding image handler into homographic handler to simplify relationship between classes
+        self.image_handler = image_handler
+
         coors2d, coors3d = self.load_coordinates(coors2Ddir, coors3Ddir)
         self.H, _ = cv2.findHomography(tuples_to_nparray(coors3d), tuples_to_nparray(coors2d))
 

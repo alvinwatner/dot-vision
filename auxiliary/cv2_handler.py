@@ -1,5 +1,5 @@
 import cv2
-from auxiliary.image_handler import ImageHandler
+from auxiliary.homographic_image_handler import ImageHandler
 from auxiliary.homographic_handler import HomographicHandler
 from auxiliary.model_interpreter import ModelInterpreter
 from auxiliary.frame_dataclass import Frame
@@ -13,10 +13,10 @@ class CV2Handler:
     t1: float
     combined_image: np.ndarray[np.array([])]
 
-    def __init__(self, cap: cv2.VideoCapture, image_handler: ImageHandler, homographic_handler: HomographicHandler,
+    def __init__(self, cap: cv2.VideoCapture, homographic_handler: HomographicHandler,
                  model_interpreter: ModelInterpreter, is_save: bool, output_file: str = "output_result.mp4"):
         # image2d, image3d
-        self.image_handler = image_handler
+        self.image_handler = homographic_handler.image_handler
 
         # transform
         self.homographic_handler = homographic_handler

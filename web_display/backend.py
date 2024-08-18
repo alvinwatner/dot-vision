@@ -1,7 +1,7 @@
 from web_display.flask_app import app
 from flask import Response, jsonify, request
 from new_dot_vision import ensemble_model
-from auxiliary.image_handler import ImageHandler
+from auxiliary.homographic_image_handler import ImageHandler
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
@@ -38,7 +38,7 @@ def get_position():
     w_prime = request.args.get('width', default=1000, type=int)
     h_prime = request.args.get('height', default=1000, type=int)
 
-    h_scalar, w_scalar = perform_linear_transform(ensemble_model.image_handler, height_prime=h_prime,
+    h_scalar, w_scalar = perform_linear_transform(ensemble_model.homographic_handler.image_handler, height_prime=h_prime,
                                                   width_prime=w_prime)
 
     transformed_points = ensemble_model.generate_raw_outputs()

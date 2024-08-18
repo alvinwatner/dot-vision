@@ -1,4 +1,4 @@
-from auxiliary.new_auto_mapper import AutoMapper
+from auxiliary.homographic_transformation import HomographicTransformation
 from auxiliary import utils
 from auxiliary.dot_vision_arguments import dot_vision_arguments
 
@@ -14,7 +14,7 @@ model_path, labels = utils.get_model_and_labels(args)
 
 cap = utils.get_video_capture(args)
 
-ensemble_model = AutoMapper(
+ensemble_model = HomographicTransformation(
     model_path=model_path,
     threshold=args.threshold,
     accelerator=args.accelerator,
@@ -31,6 +31,4 @@ if __name__ == '__main__':
         ensemble_model.stream_using_cv2()
     elif args.display == "web":
         from web_display.backend import app
-        for rule in app.url_map.iter_rules():
-            print(rule)
         app.run()

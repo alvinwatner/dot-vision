@@ -1,4 +1,4 @@
-from auxiliary.image_handler import ImageHandler
+from auxiliary.homographic_image_handler import ImageHandler
 
 image_handler = ImageHandler(image2Ddir="/home/kaorikizuna/Dot Vision/dot-vision/coordinates/nick/image_2D.png",
                              image3Ddir="/home/kaorikizuna/Dot Vision/dot-vision/coordinates/nick/image_3D.png")

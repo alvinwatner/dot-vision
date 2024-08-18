@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 from unittest.mock import MagicMock, patch
 from auxiliary.cv2_handler import CV2Handler
-from auxiliary.image_handler import ImageHandler
+from auxiliary.homographic_image_handler import ImageHandler
 from auxiliary.homographic_handler import HomographicHandler
 from auxiliary.model_interpreter import ModelInterpreter
 from auxiliary.frame_dataclass import Frame
