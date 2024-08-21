@@ -1,6 +1,6 @@
 from web_display.flask_app import app
 from flask import Response, jsonify, request
-from new_dot_vision import ensemble_model
+from dot_vision import ensemble_model
 from auxiliary.homographic_image_handler import ImageHandler
 import logging
 

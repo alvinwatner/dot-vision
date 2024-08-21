@@ -1,5 +1,5 @@
 import threading
-from new_dot_vision import args, ensemble_model
+from dot_vision import args, ensemble_model
 from web_display.api_provider import app
 
 
