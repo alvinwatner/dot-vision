@@ -31,4 +31,4 @@ if __name__ == '__main__':
         ensemble_model.stream_using_cv2()
     elif args.display == "web":
         from web_display.backend import app
-        app.run()
+        app.run(host="0.0.0.0", port=5000, debug=True)
