@@ -1,73 +1,63 @@
 # Dot Vision
 
-An innovative interactive art installation designed for a coffee shop setting. This project aims to engage patrons by visually representing their movements as dots on a display screen. Beyond its artistic appeal, Dot Vision serves as a dynamic marketing tool for Consult NTA, showcasing the company's expertise in technology solutions.
+Dot Vision is on a mission to create an open-source, robust backend that tackles various computer vision tasks. Initially starting as an art project focused on performing homographic transformations from video cameras to a 2D plane, Dot Vision has grown into a more ambitious and impactful project. Our journey has been full of joy and thrilling challenges, and we’ve decided not to stop here. We aim to expand this project into a comprehensive platform that can serve diverse computer vision needs.
+
+If you are passionate about computer vision and want to contribute to a growing, innovative project, we invite you to join us on this mission. Below, you’ll find our roadmap and current tasks that are in progress.
+
+## How to Contribute
+We welcome contributions from developers, researchers, and enthusiasts. Whether you’re interested in coding, testing, documentation, or simply spreading the word, your help is valuable to us. Check the roadmap below along with the associated to-do list.
+
+## Roadmap
+This is the roadmap for the next major dot vision release
+1. MVP Development ✅ 
+  * Our Minimum Viable Product is complete, showcasing the core functionality of homographic transformations.
+2. Deployment 👨‍🍳 (v1.0.0)
+  * We are working on deploying the MVP, ensuring that the project can be easily accessed and utilized by the community.
+3. Expand Capabilities (v2.0.0)
+  * We plan to add additional computer vision tasks, making Dot Vision a versatile tool for various applications.
+4. Client-Side Demos
+  * Develop mobile and web demos that interact with Dot Vision’s backend to demonstrate its capabilities in real-world scenarios.
+
+## To-Do List for Deployment (v1.0.0) :
+1. Identify Improvements ✅
+* Ensure the project can be deployed with minimal human intervention.
+2. List Components and Services ✅
+* Document all the components and services involved in the project.
+3. Write Dockerfiles 👨‍🍳
+* Create Dockerfiles for each application component to facilitate easy deployment.
+4. Generate Docker Compose
+* Develop a Docker Compose file to start and halt the entire application with a single command.
+5. Fix Issues During Containerization (Optional)
+* Address any issues that arise during the containerization process.
+6. Upload to Docker Repository (Optional)
+* Publish the Docker Compose setup to a repository like Docker Hub for easy access.
+
+## Get Started
+
+### Using Docker
+To facilitate setup and reproducibility, some docker images are made available via the Github Container Registry: 
+...
 
 
+### Run locally
+...
 
-## Features
+## Documentation
+Code documentation lives at https://dot-vision/docs
 
-- **Interactive Art**: Utilizes advanced object detection and computer vision technologies to track the movements of coffee shop patrons, translating these into captivating visual representations (dots) on a digital canvas.
-- **Engagement Tool**: Encourages interaction by allowing patrons to influence the art through their movement, creating a unique, dynamic experience.
-- **Educational Aspect**: Includes a QR code linked to information about Dot Vision, offering insights into the technology behind the installation and highlighting Consult NTA’s capabilities.
+## Acknowledgements
+Dot Vision is run as a collaborative open-source project. The project was incubated by [ConsultNTA](https://www.consultnta.com/).
 
+Current maintainers:
+* [Alvin Setiadi](https://www.linkedin.com/in/alvinwatner?originalSubdomain=id)
+* [Agung Krisna](https://www.linkedin.com/in/agung-krisna-1284141b9/)
 
-
-## Deployment
-
-Deployment of this project onto a coral board consists of these steps
-
-Get into your board
-```bash
-mdt shell
-```
-
-Run the initialization script
-```bash
-wget https://raw.githubusercontent.com/alvinwatner/dot-vision/main/init.sh -O - | bash 
-```
+## Social Media
+* Join Our Discord: Click here to join to discuss ideas, share feedback, and collaborate with the team.
+* Follow Us on Social Media:
+  * LinkedIn: Coming soon
+  * X (formerly Twitter): Coming soon
 
 
-## Run Locally
-
-Clone the project
-
-```bash
-  git clone https://github.com/alvinwatner/dot-vision
-```
-
-Go to the project directory
-
-```bash
-  cd dot-vision
-```
-
-Install dependencies
-
-```bash
-  pip install -r requirements.txt
-```
-
-Start the program
-
-```bash
-  python3 dot_vision.py --accelerator cpu
-```
-
-## Options Summary
-Some options (flags) can be passed into the program in order to change its behavior.
-
-```
-optional arguments:
-  -h, --help                    show this help message and exit
-  --vidsource VIDSOURCE         Video source for tracking
-  --layout2Ddir LAYOUT2DDIR     2D layout image
-  --layout3Ddir LAYOUT3DDIR     3D layout image
-  --coor2Ddir COOR2DDIR         2D coordinates data
-  --coor3Ddir COOR3DDIR         3D coordinates data
-  --live                        Enable live tracking
-  --modeldir MODELDIR           Directory containing the detect.tflite and labelmap.txt
-  --threshold THRESHOLD         Set the threshold for object tracking accuracy
-  --accelerator {cpu,tpu}       Set the accelerator used in object detection
-```
-
-The options can be seen by running `dot_vision.py -h`
+## Citation 
+Research article coming soon.
