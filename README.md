@@ -4,6 +4,14 @@ Dot Vision is on a mission to create an open-source, robust backend that tackles
 
 If you are passionate about computer vision and want to contribute to a growing, innovative project, we invite you to join us on this mission. Below, you’ll find our roadmap and current tasks that are in progress.
 
+
+
+https://github.com/user-attachments/assets/4da38373-deb2-415c-bae1-7d63f30038e1
+
+
+
+
+
 ## How to Contribute
 We welcome contributions from developers, researchers, and enthusiasts. Whether you’re interested in coding, testing, documentation, or simply spreading the word, your help is valuable to us. Check the roadmap below along with the associated to-do list.
 
