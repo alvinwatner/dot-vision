@@ -40,7 +40,14 @@ To facilitate setup and reproducibility, some docker images are made available v
 
 
 ### Run locally
+
+#### Run on Linux
+
+
+#### Run on Raspberry PI 
+
 ...
+
 
 ## Documentation
 Code documentation lives at https://dot-vision/docs
