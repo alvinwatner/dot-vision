@@ -43,17 +43,37 @@ This is the roadmap for the next major dot vision release
 ## Get Started
 
 ### Using Docker
-To facilitate setup and reproducibility, some docker images are made available via the Github Container Registry: 
-...
+To facilitate setup and reproducibility, some docker images are made available via docker compose: 
+
+```
+git clone https://github.com/alvinwatner/dot-vision
+docker compose up
+```
 
 
 ### Run locally
 
-#### Run on Linux
+Clone the project 
+
+```
+git clone https://github.com/alvinwatner/dot-vision
+``` 
+
+Install requirements
+
+```
+pip install -r requirements.py
+```
+
+Run the app
+
+```
+python3 dot_vision.py
+```
 
 
 #### Run on Raspberry PI 
-
+Running the project on Raspberry Pi can be done either using the "Run Locally" steps or the "Using Docker" option. 
 ...
 
 
