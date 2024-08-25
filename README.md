@@ -2,7 +2,6 @@
 
 Dot Vision is on a mission to create an open-source, robust backend that tackles various computer vision tasks. Initially starting as an art project focused on performing homographic transformations from video cameras to a 2D plane, Dot Vision has grown into a more ambitious and impactful project. Our journey has been full of joy and thrilling challenges, and we’ve decided not to stop here. We aim to expand this project into a comprehensive platform that can serve diverse computer vision needs.
 
-If you are passionate about computer vision and want to contribute to a growing, innovative project, we invite you to join us on this mission. Below, you’ll find our roadmap and current tasks that are in progress.
 
 
 
@@ -11,6 +10,7 @@ https://github.com/user-attachments/assets/4da38373-deb2-415c-bae1-7d63f30038e1
 
 
 
+If you are passionate about computer vision and want to contribute to a growing, innovative project, we invite you to join us on this mission. Below, you’ll find our roadmap and current tasks that are in progress.
 
 ## How to Contribute
 We welcome contributions from developers, researchers, and enthusiasts. Whether you’re interested in coding, testing, documentation, or simply spreading the word, your help is valuable to us. Check the roadmap below along with the associated to-do list.
