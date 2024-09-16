@@ -19,19 +19,19 @@ We welcome contributions from developers, researchers, and enthusiasts. Whether 
 This is the roadmap for the next major dot vision release
 1. MVP Development ✅ 
   * Our Minimum Viable Product is complete, showcasing the core functionality of homographic transformations.
-2. Deployment 👨‍🍳 (v1.0.0)
+2. Deployment 👨‍🍳 (v0.1.0-beta)
   * We are working on deploying the MVP, ensuring that the project can be easily accessed and utilized by the community.
-3. Expand Capabilities (v2.0.0)
+3. Expand Capabilities (v0.2.0-beta)
   * We plan to add additional computer vision tasks, making Dot Vision a versatile tool for various applications.
 4. Client-Side Demos
   * Develop mobile and web demos that interact with Dot Vision’s backend to demonstrate its capabilities in real-world scenarios.
 
-## To-Do List for Deployment (v1.0.0) :
+## To-Do List for Deployment (v0.1.0-beta) :
 1. Identify Improvements ✅
 * Ensure the project can be deployed with minimal human intervention.
 2. List Components and Services ✅
 * Document all the components and services involved in the project.
-3. Write Dockerfiles 👨‍🍳
+3. Write Dockerfiles ✅
 * Create Dockerfiles for each application component to facilitate easy deployment.
 4. Generate Docker Compose
 * Develop a Docker Compose file to start and halt the entire application with a single command.
