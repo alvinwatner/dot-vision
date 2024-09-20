@@ -84,8 +84,8 @@ Code documentation lives at https://dot-vision/docs
 Dot Vision is run as a collaborative open-source project. The project was incubated by [ConsultNTA](https://www.consultnta.com/).
 
 Current maintainers:
+* [Agung Krisna](https://www.linkedin.com/in/agung-krisna-1284141b9/) (lead)
 * [Alvin Setiadi](https://www.linkedin.com/in/alvinwatner?originalSubdomain=id)
-* [Agung Krisna](https://www.linkedin.com/in/agung-krisna-1284141b9/)
 
 ## Social Media
 * Join Our Discord: Click here to join to discuss ideas, share feedback, and collaborate with the team.
