@@ -1,17 +1,15 @@
-# docker doesn't have any X11 windowing system (a.k.a GUI)
-# therefore downloading stardard version of opencv will result in failure to build
-# we need to use the headless version of opencv
+FROM python:3.10-slim
 
-FROM python:3.9-slim
-LABEL authors="kaorikizuna"
+WORKDIR  /app
 
-WORKDIR /app
-COPY docker_requirements.txt .
-COPY . .
+RUN pip install poetry
 
-RUN pip install -r docker_requirements.txt
+COPY pyproject.toml /app
+
+RUN poetry config virtualenvs.create false && poetry install --no-dev --no-interaction --no-ansi
+
+COPY . /app
 
 EXPOSE 5000
-CMD ["python3", "dot_vision.py"]
 
-# run this file with -P, to use the exposed port.
+CMD ["python3", "main.py"]
