@@ -1,11 +1,5 @@
-import logging
-from pathlib import Path
-
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-
-logger = logging.getLogger(__name__)
-
-CONFIDENCE_THRESHOLD = 0.5
+U2FsdGVkX1/ITY1RCuklm+NRYAdzB5Q34RzbXi1HyUN873gA+N+FB6TjLlJB5sVc
+TgsGANYD6KFcb6gDjQJAY+X9DLI8Zp5EFsqhIUOAPRMmrqh2jo03pzoelo8HSWxq
+r14DmUlisQBHkfZdWhLRl/ftvqsltax7kjdhRSrg9Ul+xVXSd+hTpVO76v8EKUF9
+2PLa28EPqPWN4kF3bn/ulI0HzXj2PYa4FMfj1tJNGpZ8H6RmbT+MfgUk/PBiJ6kT
+OWzl/fz2KdeMRD31adGQP+71pI8t2nlIohKw2qTAG1PinMAvW0T9Vs5KE4k6KLkT
